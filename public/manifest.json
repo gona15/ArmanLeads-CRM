@@ -1,0 +1,9 @@
+{
+  "name": "ArmanLeads Ledger",
+  "short_name": "ArmanLeads",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F1EA",
+  "theme_color": "#12283C",
+  "icons": []
+}
