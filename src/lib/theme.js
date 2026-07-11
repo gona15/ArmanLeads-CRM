@@ -24,7 +24,7 @@ export function initials(name) {
 // ever three values here.
 export const ASSIGNEE_COLOR = {
   Arman: "#2F6F62",
-  Partner: "#5B8DB8",
+  Prusha: "#5B8DB8",
   Both: "#C99A3C",
 };
 
