@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ArmanLeads Ledger</title>
+    <meta name="theme-color" content="#12283C" />
+    <link rel="manifest" href="/manifest.json" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root { color-scheme: light; }
+      * { -webkit-tap-highlight-color: transparent; }
+      body { font-family: 'Inter', system-ui, sans-serif; background: #F5F3EC; }
+      .font-serif { font-family: 'Fraunces', serif; }
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+      ::selection { background: #2F6F62; color: #fff; }
+
+      /* shared card surface, used everywhere via className="surface" */
+      .surface {
+        background: #FFFFFF;
+        border: 1px solid #E4E0D5;
+        border-radius: 20px;
+        box-shadow: 0 1px 2px rgba(18,40,60,0.04), 0 1px 3px rgba(18,40,60,0.04);
+      }
+
+      /* thin custom scrollbar for internal scroll areas */
+      .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+      .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+      .scroll-thin::-webkit-scrollbar-thumb { background: #DAD3C0; border-radius: 99px; }
+      .scroll-thin::-webkit-scrollbar-thumb:hover { background: #C7BEA5; }
+
+      /* safe-area padding for installed PWA use on notched phones */
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+      .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px)); }
+
+      /* visible focus state, paired with focus:outline-none in utility classes */
+      .focus-ring:focus-visible { outline: 2px solid #2F6F62; outline-offset: 2px; }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+      @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+      .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
+      .animate-fade-slide-up { animation: fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-scale-in { animation: scaleIn 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
