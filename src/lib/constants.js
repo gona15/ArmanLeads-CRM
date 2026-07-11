@@ -19,7 +19,7 @@ export const STATUS_COLOR = {
   "Booked Call": "#1F5C4E", "Disqualified": "#A33B3B", "Client Won": "#12283C",
 };
 export const DEFAULT_ANGLE_TYPES = ["Recent Post", "Sponsorship/Community", "Award/Milestone", "Review Response", "Personal/Family", "New Location/Expansion", "Team/Staff Highlight", "Holiday/Seasonal Post"];
-export const ASSIGNEES = ["Arman", "Partner", "Both"];
+export const ASSIGNEES = ["Arman", "Prusha", "Both"];
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 export const todayISO = () => new Date().toISOString().slice(0, 10);
