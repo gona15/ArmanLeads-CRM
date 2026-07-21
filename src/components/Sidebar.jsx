@@ -1,9 +1,10 @@
 import React from "react";
-import { LayoutDashboard, Building2, Plus, Mail, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Plus, Mail, LogOut, Sunrise } from "lucide-react";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "today", label: "Today", icon: Sunrise },
   { key: "list", label: "All Clinics", icon: Building2 },
 ];
 

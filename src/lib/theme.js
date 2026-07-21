@@ -19,6 +19,11 @@ export function initials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// The armanleads.com brand maroon, used as a targeted accent only (truly
+// overdue items, primary urgency states) — never as a base/background
+// color, so the daily-use tool stays calm rather than alarm-colored.
+export const BRAND_MAROON = "#7A1F2B";
+
 // Fixed, deliberate colors for the two people + the joint "Both" queue —
 // stable and recognizable rather than hash-derived, since there are only
 // ever three values here.

@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Mail } from "lucide-react";
 import { useCloudState, useWhoAmI } from "./lib/useCloudState";
-import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState } from "./lib/constants";
+import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
 import { MobileTopBar, MobileBottomBar } from "./components/MobileNav";
 import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
 import LeadsList from "./components/LeadsList";
 import LeadDetail from "./components/LeadDetail";
+import TodayView from "./components/TodayView";
 
 export default function App() {
   const { state, loaded, saving, persist } = useCloudState();
@@ -31,8 +32,13 @@ export default function App() {
     }
   };
 
-  const updateLead = (id, patch) => {
-    const next = leads.map((l) => (l.id === id ? { ...l, ...patch, lastUpdated: todayISO(), lastUpdatedBy: me || l.lastUpdatedBy } : l));
+  const updateLead = (id, patch, activityNote) => {
+    const next = leads.map((l) => {
+      if (l.id !== id) return l;
+      const merged = { ...l, ...patch, lastUpdated: todayISO(), lastUpdatedBy: me || l.lastUpdatedBy };
+      if (activityNote) merged.activityLog = logActivity(l, me, activityNote);
+      return merged;
+    });
     saveLeads(next);
   };
 
@@ -41,6 +47,16 @@ export default function App() {
     setView("list");
     setSelectedId(null);
     setConfirmDelete(false);
+  };
+
+  // Duplicate check is a warning, not a block — same name + same city,
+  // case-insensitive, ignoring blank names so a fresh blank lead never
+  // matches another fresh blank lead.
+  const findDuplicates = (lead) => {
+    if (!lead?.name?.trim()) return [];
+    const name = lead.name.trim().toLowerCase();
+    const city = (lead.city || "").trim().toLowerCase();
+    return leads.filter((l) => l.id !== lead.id && l.name.trim().toLowerCase() === name && (l.city || "").trim().toLowerCase() === city);
   };
 
   const addLead = () => {
@@ -54,7 +70,17 @@ export default function App() {
     updateLead(lead.id, {
       sentDates: { ...lead.sentDates, [stage]: todayISO() },
       status: stage === "initial" ? "Sent" : lead.status,
-    });
+    }, `Marked ${stage} as sent`);
+  };
+
+  // Undoes an accidental "mark sent" click — clears the sent date for that
+  // stage (and reverts status back to Draft Ready if it was the initial
+  // stage that got marked), so a slipped click is always recoverable.
+  const unmarkSent = (lead, stage) => {
+    updateLead(lead.id, {
+      sentDates: { ...lead.sentDates, [stage]: "" },
+      status: stage === "initial" && lead.status === "Sent" ? "Draft Ready" : lead.status,
+    }, `Undid ${stage} sent`);
   };
 
   const goToLead = (id) => { setSelectedId(id); setView("detail"); };
@@ -130,6 +156,17 @@ export default function App() {
             </div>
           )}
 
+          {view === "today" && (
+            <div className="max-w-6xl mx-auto">
+              <TodayView
+                followupsDue={followupsDue}
+                draftsInProgress={draftsInProgress}
+                recentlyAdded={leads.filter((l) => l.dateAdded === todayISO())}
+                onSelectLead={goToLead}
+              />
+            </div>
+          )}
+
           {view === "list" && (
             <div className="max-w-6xl mx-auto">
               <LeadsList
@@ -154,11 +191,14 @@ export default function App() {
                 onBack={() => setView("list")}
                 onUpdate={(patch) => updateLead(selected.id, patch)}
                 onMarkSent={(stage) => markSent(selected, stage)}
+                onUnmarkSent={(stage) => unmarkSent(selected, stage)}
                 onDelete={() => deleteLead(selected.id)}
                 confirmDelete={confirmDelete}
                 setConfirmDelete={setConfirmDelete}
                 customAngleTypes={customAngleTypes}
                 onAddCustomAngle={addCustomAngleType}
+                allAngleTypes={allAngleTypes}
+                duplicates={findDuplicates(selected)}
               />
             </div>
           )}

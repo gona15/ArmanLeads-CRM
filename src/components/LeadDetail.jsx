@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users } from "lucide-react";
 import CityAutocomplete from "./CityAutocomplete";
 import AngleTypeSelect from "./AngleTypeSelect";
 import StatusBadge from "./ui/StatusBadge";
@@ -7,7 +7,11 @@ import Select from "./ui/Select";
 import Button from "./ui/Button";
 import Modal from "./ui/Modal";
 import { Field, inputCls, textareaCls } from "./ui/Field";
-import { STAGES, STAGE_LABEL, STATUSES, ASSIGNEES, computeFollowupState, fmtDate } from "../lib/constants";
+import {
+  STAGES, STAGE_LABEL, STATUSES, ASSIGNEES, computeFollowupState, fmtDate, fmtDateTime,
+  detectPersonalContent, suggestNextAngle,
+} from "../lib/constants";
+import { BRAND_MAROON } from "../lib/theme";
 
 function SectionCard({ icon: Icon, title, children }) {
   return (
@@ -20,12 +24,29 @@ function SectionCard({ icon: Icon, title, children }) {
   );
 }
 
-export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelete, confirmDelete, setConfirmDelete, customAngleTypes, onAddCustomAngle }) {
+function PersonalContentWarning({ text }) {
+  const { flagged, matches } = detectPersonalContent(text);
+  if (!flagged) return null;
+  return (
+    <div className="mt-1.5 flex items-start gap-1.5 text-[11px]" style={{ color: BRAND_MAROON }}>
+      <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
+      <span>Possible personal/family content detected ("{matches[0]}") — check this doesn't belong in a draft.</span>
+    </div>
+  );
+}
+
+export default function LeadDetail({
+  lead, onBack, onUpdate, onMarkSent, onUnmarkSent, onDelete, confirmDelete, setConfirmDelete,
+  customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates,
+}) {
   const [activeStage, setActiveStage] = useState("initial");
+  const [confirmStage, setConfirmStage] = useState(null); // { stage, action: "send" | "undo" }
   const fu = computeFollowupState(lead);
   const setField = (k, v) => onUpdate({ [k]: v });
   const setDraft = (stage, field, val) => onUpdate({ drafts: { ...lead.drafts, [stage]: { ...lead.drafts[stage], [field]: val } } });
+  const setStageAngle = (stage, val) => onUpdate({ stageAngles: { ...lead.stageAngles, [stage]: val } });
   const wordCount = (lead.drafts[activeStage].body || "").trim().split(/\s+/).filter(Boolean).length;
+  const suggestedAngle = suggestNextAngle(lead, allAngleTypes || []);
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -37,6 +58,18 @@ export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelet
           <Trash2 size={13} /> Delete clinic
         </Button>
       </div>
+
+      {duplicates && duplicates.length > 0 && (
+        <div
+          className="rounded-2xl p-3.5 flex items-start gap-2.5 text-sm"
+          style={{ backgroundColor: "rgba(122,31,43,0.06)", border: `1px solid rgba(122,31,43,0.18)`, color: BRAND_MAROON }}
+        >
+          <Users size={16} className="shrink-0 mt-0.5" />
+          <span>
+            Same name + city already exists ({duplicates.length === 1 ? "1 other clinic" : `${duplicates.length} other clinics`}) — double check this isn't a duplicate entry.
+          </span>
+        </div>
+      )}
 
       <div className="surface p-5 sm:p-6">
         <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
@@ -54,8 +87,8 @@ export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelet
           <div className="flex flex-col items-end gap-2">
             <StatusBadge status={lead.status} />
             {fu && (
-              <span className="text-[11px] font-mono text-[#D2691E] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D2691E]" />
+              <span className="text-[11px] font-mono flex items-center gap-1" style={{ color: fu.daysOverdue > 0 ? BRAND_MAROON : "#D2691E" }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: fu.daysOverdue > 0 ? BRAND_MAROON : "#D2691E" }} />
                 {STAGE_LABEL[fu.dueStage]} due {fu.daysOverdue > 0 ? `(${fu.daysOverdue}d overdue)` : "today"}
               </span>
             )}
@@ -121,7 +154,10 @@ export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelet
 
       <SectionCard icon={FileText} title="Notes">
         <div className="space-y-4">
-          <Field label="SMYK Personalization Notes"><textarea value={lead.smykNotes} onChange={(e) => setField("smykNotes", e.target.value)} className={textareaCls} rows={3} /></Field>
+          <Field label="SMYK Personalization Notes">
+            <textarea value={lead.smykNotes} onChange={(e) => setField("smykNotes", e.target.value)} className={textareaCls} rows={3} />
+            <PersonalContentWarning text={lead.smykNotes} />
+          </Field>
           <Field label="Next Action / Note to Partner"><textarea value={lead.nextNote} onChange={(e) => setField("nextNote", e.target.value)} className={textareaCls} rows={2} /></Field>
         </div>
       </SectionCard>
@@ -145,33 +181,69 @@ export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelet
               >
                 {STAGE_LABEL[s]}
                 {lead.sentDates[s] && <CheckCircle2 size={12} className="inline ml-1.5 -mt-0.5" />}
-                {isDueStage && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#D2691E] ring-2 ring-white" />}
+                {isDueStage && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ring-2 ring-white" style={{ backgroundColor: fu.daysOverdue > 0 ? BRAND_MAROON : "#D2691E" }} />}
               </button>
             );
           })}
         </div>
 
-        <Field label="Subject">
-          <input value={lead.drafts[activeStage].subject} onChange={(e) => setDraft(activeStage, "subject", e.target.value)} className={inputCls} />
-        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-3 mb-3">
+          <Field label="Subject">
+            <input value={lead.drafts[activeStage].subject} onChange={(e) => setDraft(activeStage, "subject", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Angle Used" hint={!lead.stageAngles?.[activeStage] && suggestedAngle ? `Try: ${suggestedAngle}` : undefined}>
+            <Select value={lead.stageAngles?.[activeStage] || ""} onChange={(e) => setStageAngle(activeStage, e.target.value)}>
+              <option value="">—</option>
+              {(allAngleTypes || []).map((a) => <option key={a} value={a}>{a}</option>)}
+            </Select>
+          </Field>
+        </div>
         <div className="mt-3">
           <Field label="Body">
             <textarea value={lead.drafts[activeStage].body} onChange={(e) => setDraft(activeStage, "body", e.target.value)} className={textareaCls} rows={8} />
+            <PersonalContentWarning text={lead.drafts[activeStage].body} />
           </Field>
           <div className="text-[11px] text-[#B8B2A0] mt-1.5 text-right">{wordCount} words</div>
         </div>
 
         <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
-          <span className="text-[11px] font-mono text-[#8A8574]">
-            {lead.sentDates[activeStage] ? `Sent ${fmtDate(lead.sentDates[activeStage])}` : "Not sent yet — draft autosaves"}
-          </span>
-          {!lead.sentDates[activeStage] && (
-            <Button variant="primary" size="md" onClick={() => onMarkSent(activeStage)} disabled={!lead.drafts[activeStage].body}>
-              <Send size={13} /> Mark {STAGE_LABEL[activeStage]} as Sent
-            </Button>
+          {lead.sentDates[activeStage] ? (
+            <>
+              <span className="text-[11px] font-mono text-[#8A8574] flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-[#2F6F62]" /> Sent {fmtDate(lead.sentDates[activeStage])}
+              </span>
+              <Button variant="secondary" size="md" onClick={() => setConfirmStage({ stage: activeStage, action: "undo" })}>
+                <Undo2 size={13} /> Undo — not actually sent
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="text-[11px] font-mono text-[#8A8574]">Not sent yet — draft autosaves</span>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => setConfirmStage({ stage: activeStage, action: "send" })}
+                disabled={!lead.drafts[activeStage].body}
+              >
+                <Send size={13} /> Mark {STAGE_LABEL[activeStage]} as Sent
+              </Button>
+            </>
           )}
         </div>
       </SectionCard>
+
+      {lead.activityLog && lead.activityLog.length > 0 && (
+        <SectionCard icon={Clock} title="Activity">
+          <div className="space-y-1.5 max-h-48 overflow-y-auto scroll-thin">
+            {[...lead.activityLog].reverse().map((entry, i) => (
+              <div key={i} className="flex items-center justify-between text-[12px] py-1">
+                <span className="text-[#6B6355]">{entry.action} — <span className="text-[#8A8574]">{entry.by}</span></span>
+                <span className="font-mono text-[#B8B2A0] shrink-0">{fmtDateTime(entry.at)}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete this clinic?" maxWidth="max-w-sm">
         <p className="text-sm text-[#6B6355] mb-5">
@@ -180,6 +252,32 @@ export default function LeadDetail({ lead, onBack, onUpdate, onMarkSent, onDelet
         <div className="flex gap-2.5 justify-end">
           <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
           <Button variant="dangerSolid" onClick={onDelete}>Yes, delete</Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!confirmStage}
+        onClose={() => setConfirmStage(null)}
+        title={confirmStage?.action === "send" ? `Mark ${STAGE_LABEL[confirmStage?.stage] || ""} as sent?` : `Undo sent — ${STAGE_LABEL[confirmStage?.stage] || ""}?`}
+        maxWidth="max-w-sm"
+      >
+        <p className="text-sm text-[#6B6355] mb-5">
+          {confirmStage?.action === "send"
+            ? "This marks the email as actually sent and starts the follow-up countdown from today. Only confirm once you've actually sent it."
+            : "This clears the sent date and reopens this stage for editing — use this if it got marked sent by mistake."}
+        </p>
+        <div className="flex gap-2.5 justify-end">
+          <Button variant="secondary" onClick={() => setConfirmStage(null)}>Cancel</Button>
+          <Button
+            variant={confirmStage?.action === "send" ? "primary" : "dangerSolid"}
+            onClick={() => {
+              if (confirmStage?.action === "send") onMarkSent(confirmStage.stage);
+              else onUnmarkSent(confirmStage.stage);
+              setConfirmStage(null);
+            }}
+          >
+            {confirmStage?.action === "send" ? "Yes, mark as sent" : "Yes, undo"}
+          </Button>
         </div>
       </Modal>
     </div>
