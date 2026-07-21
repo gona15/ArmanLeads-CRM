@@ -1,8 +1,8 @@
 import React from "react";
-import { LayoutDashboard, Building2, Plus, Mail, Sunrise } from "lucide-react";
+import { LayoutDashboard, Building2, Plus, Mail, Sunrise, MapPin, Search } from "lucide-react";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
 
-export function MobileTopBar({ me, saving, onSwitchIdentity }) {
+export function MobileTopBar({ me, saving, onSwitchIdentity, onOpenSearch }) {
   return (
     <header className="md:hidden sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-[#E4E0D5] pt-safe">
       <div className="flex items-center justify-between px-4 h-14">
@@ -12,40 +12,40 @@ export function MobileTopBar({ me, saving, onSwitchIdentity }) {
           </div>
           <span className="font-serif text-[16px] text-[#12283C]">ArmanLeads</span>
         </div>
-        <button
-          onClick={onSwitchIdentity}
-          className="flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:bg-[#12283C]/5 transition-colors"
-        >
-          <AssigneeAvatar name={me} size={26} />
-          <span className="text-[13px] font-medium text-[#12283C]">{me}</span>
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${saving ? "bg-[#C99A3C] animate-pulse-dot" : "bg-[#2F6F62]"}`}
-          />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={onOpenSearch} aria-label="Quick search" className="w-9 h-9 flex items-center justify-center rounded-full active:bg-[#12283C]/5 transition-colors text-[#6B6355]">
+            <Search size={17} />
+          </button>
+          <button
+            onClick={onSwitchIdentity}
+            className="flex items-center gap-1.5 pl-1 pr-2.5 py-1.5 rounded-full active:bg-[#12283C]/5 transition-colors"
+          >
+            <AssigneeAvatar name={me} size={26} />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${saving ? "bg-[#C99A3C] animate-pulse-dot" : "bg-[#2F6F62]"}`}
+            />
+          </button>
+        </div>
       </div>
     </header>
   );
 }
 
 export function MobileBottomBar({ view, setView, onAddLead }) {
+  const tab = (key, label, Icon) => (
+    <button
+      onClick={() => setView(key)}
+      className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors ${view === key ? "text-[#12283C]" : "text-[#B8B2A0]"}`}
+    >
+      <Icon size={19} />
+      <span className="text-[9px] font-medium">{label}</span>
+    </button>
+  );
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 backdrop-blur-md border-t border-[#E4E0D5] pb-safe">
-      <div className="flex items-center justify-around h-16 px-2">
-        <button
-          onClick={() => setView("dashboard")}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${view === "dashboard" ? "text-[#12283C]" : "text-[#B8B2A0]"}`}
-        >
-          <LayoutDashboard size={20} />
-          <span className="text-[10px] font-medium">Dashboard</span>
-        </button>
-
-        <button
-          onClick={() => setView("today")}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${view === "today" ? "text-[#12283C]" : "text-[#B8B2A0]"}`}
-        >
-          <Sunrise size={20} />
-          <span className="text-[10px] font-medium">Today</span>
-        </button>
+      <div className="flex items-center justify-around h-16 px-1">
+        {tab("dashboard", "Home", LayoutDashboard)}
+        {tab("today", "Today", Sunrise)}
 
         <button
           onClick={onAddLead}
@@ -55,13 +55,8 @@ export function MobileBottomBar({ view, setView, onAddLead }) {
           <Plus size={24} />
         </button>
 
-        <button
-          onClick={() => setView("list")}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${view === "list" ? "text-[#12283C]" : "text-[#B8B2A0]"}`}
-        >
-          <Building2 size={20} />
-          <span className="text-[10px] font-medium">Clinics</span>
-        </button>
+        {tab("cities", "Cities", MapPin)}
+        {tab("list", "Clinics", Building2)}
       </div>
     </nav>
   );

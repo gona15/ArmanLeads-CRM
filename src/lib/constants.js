@@ -108,7 +108,27 @@ export function blankLead(overrides = {}) {
   };
 }
 
-export const DEFAULT_STATE = { leads: [], dailyGoal: 25, customAngleTypes: [] };
+export const DEFAULT_STATE = { leads: [], dailyGoal: 25, customAngleTypes: [], activeCity: "", completedCities: [] };
+
+// One card per distinct city seen across leads — used by the Cities view
+// so Arman can see progress market-by-market and know when a city is
+// wrapped up and it's time to move to the next one.
+export function groupByCity(leads) {
+  const cities = [...new Set(leads.map((l) => (l.city || "").trim()).filter(Boolean))].sort();
+  return cities.map((city) => {
+    const cityLeads = leads.filter((l) => (l.city || "").trim() === city);
+    return {
+      city,
+      total: cityLeads.length,
+      notStarted: cityLeads.filter((l) => l.status === "Not Researched").length,
+      inProgress: cityLeads.filter((l) => !["Not Researched", "Disqualified", "Client Won"].includes(l.status)).length,
+      sent: cityLeads.filter((l) => l.sentDates.initial).length,
+      replied: cityLeads.filter((l) => l.repliedDate).length,
+      won: cityLeads.filter((l) => l.status === "Client Won").length,
+      disqualified: cityLeads.filter((l) => l.status === "Disqualified").length,
+    };
+  });
+}
 
 export function computeFollowupState(lead) {
   if (["Disqualified", "Client Won", "Replied", "Booked Call"].includes(lead.status)) return null;

@@ -6,17 +6,19 @@ import StatusBadge from "./ui/StatusBadge";
 import { QueueCard, QueueRow } from "./ui/QueueCard";
 import { STAGE_LABEL, STATUS_COLOR } from "../lib/constants";
 import { hexToRgba, BRAND_MAROON } from "../lib/theme";
+import { useCountUp } from "../lib/useCountUp";
 
-function KpiCard({ icon: Icon, label, value, accent, delay = 0 }) {
+function KpiCard({ icon: Icon, label, value, suffix = "", accent, delay = 0 }) {
+  const display = useCountUp(value);
   return (
-    <div className="surface p-4 sm:p-5 animate-fade-slide-up" style={{ animationDelay: `${delay}ms` }}>
+    <div className="surface p-4 sm:p-5 animate-fade-slide-up hover:shadow-[0_4px_16px_rgba(18,40,60,0.08)] transition-shadow duration-200" style={{ animationDelay: `${delay}ms` }}>
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-[#B8B2A0]">{label}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: hexToRgba(accent, 0.12) }}>
           <Icon size={14} style={{ color: accent }} />
         </div>
       </div>
-      <div className="font-mono text-2xl sm:text-[28px] font-bold text-[#12283C] tabular-nums leading-none">{value}</div>
+      <div className="font-mono text-2xl sm:text-[28px] font-bold text-[#12283C] tabular-nums leading-none">{display}{suffix}</div>
     </div>
   );
 }
@@ -49,8 +51,8 @@ export default function Dashboard({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard icon={Send} label="Emails Sent" value={totalSentEmails} accent="#2F6F62" delay={0} />
-        <KpiCard icon={TrendingUp} label="Reply Rate" value={`${replyRate}%`} accent="#5B8DB8" delay={40} />
-        <KpiCard icon={Star} label="Conversion" value={`${convRate}%`} accent="#C99A3C" delay={80} />
+        <KpiCard icon={TrendingUp} label="Reply Rate" value={Number(replyRate)} suffix="%" accent="#5B8DB8" delay={40} />
+        <KpiCard icon={Star} label="Conversion" value={Number(convRate)} suffix="%" accent="#C99A3C" delay={80} />
         <KpiCard icon={Building2} label="Total Clinics" value={totalLeads} accent="#12283C" delay={120} />
       </div>
 

@@ -18,6 +18,9 @@ export default function LeadsList({
   setStatusFilter,
   assigneeFilter,
   setAssigneeFilter,
+  cityFilter,
+  setCityFilter,
+  allCities,
   onSelectLead,
   onAddLead,
 }) {
@@ -45,7 +48,13 @@ export default function LeadsList({
             className="outline-none text-sm w-full bg-transparent placeholder:text-[#B8B2A0]"
           />
         </div>
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 flex-wrap">
+          {allCities && allCities.length > 0 && (
+            <Select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} className="!w-auto min-w-[130px]">
+              <option value="All">All Cities</option>
+              {allCities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </Select>
+          )}
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="!w-auto min-w-[136px]">
             <option>All</option>
             {STATUSES.map((s) => <option key={s}>{s}</option>)}
@@ -71,7 +80,7 @@ export default function LeadsList({
               key={l.id}
               onClick={() => onSelectLead(l.id)}
               style={{ animationDelay: `${Math.min(i, 14) * 25}ms` }}
-              className="animate-fade-in w-full text-left flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[#F7F5EF] transition-colors group"
+              className="animate-fade-in w-full text-left flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[#F7F5EF] active:scale-[0.995] transition-all duration-150 group"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar name={l.name || "Unnamed"} color={colorForSeed(l.name || l.id)} size={38} className="hidden sm:flex" />

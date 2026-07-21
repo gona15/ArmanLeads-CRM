@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mail } from "lucide-react";
 import { useCloudState, useWhoAmI } from "./lib/useCloudState";
-import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity } from "./lib/constants";
+import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
 import { MobileTopBar, MobileBottomBar } from "./components/MobileNav";
 import LoginScreen from "./components/LoginScreen";
@@ -9,6 +9,8 @@ import Dashboard from "./components/Dashboard";
 import LeadsList from "./components/LeadsList";
 import LeadDetail from "./components/LeadDetail";
 import TodayView from "./components/TodayView";
+import CitiesView from "./components/CitiesView";
+import QuickSearch from "./components/QuickSearch";
 
 export default function App() {
   const { state, loaded, saving, persist } = useCloudState();
@@ -18,11 +20,15 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [assigneeFilter, setAssigneeFilter] = useState("All");
+  const [cityFilter, setCityFilter] = useState("All");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
 
   const leads = state?.leads || [];
   const dailyGoal = state?.dailyGoal ?? 25;
   const customAngleTypes = state?.customAngleTypes || [];
+  const activeCity = state?.activeCity || "";
+  const completedCities = state?.completedCities || [];
 
   const saveLeads = (nextLeads) => persist({ ...state, leads: nextLeads });
   const saveGoal = (g) => persist({ ...state, dailyGoal: g });
@@ -85,6 +91,23 @@ export default function App() {
 
   const goToLead = (id) => { setSelectedId(id); setView("detail"); };
 
+  const setActiveCity = (city) => persist({ ...state, activeCity: city, completedCities: completedCities.filter((c) => c !== city) });
+  const markCityComplete = (city) => persist({ ...state, completedCities: [...new Set([...completedCities, city])], activeCity: activeCity === city ? "" : activeCity });
+  const reopenCity = (city) => persist({ ...state, completedCities: completedCities.filter((c) => c !== city) });
+  const viewCity = (city) => { setCityFilter(city); setView("list"); };
+
+  const openQuickSearch = () => setQuickSearchOpen(true);
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setQuickSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (!loaded || !state) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F3EC]">
@@ -103,11 +126,14 @@ export default function App() {
   }
 
   const filtered = leads.filter((l) => {
-    const matchesSearch = !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.city.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !search || (l.name || "").toLowerCase().includes(search.toLowerCase()) || (l.city || "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "All" || l.status === statusFilter;
     const matchesAssignee = assigneeFilter === "All" || l.assignedTo === assigneeFilter;
-    return matchesSearch && matchesStatus && matchesAssignee;
+    const matchesCity = cityFilter === "All" || l.city === cityFilter;
+    return matchesSearch && matchesStatus && matchesAssignee && matchesCity;
   });
+  const allCities = [...new Set(leads.map((l) => l.city).filter(Boolean))].sort();
+  const cityGroups = groupByCity(leads);
 
   const followupsDue = leads.map((l) => ({ l, fu: computeFollowupState(l) })).filter((x) => x.fu).sort((a, b) => b.fu.daysOverdue - a.fu.daysOverdue);
   const draftsInProgress = leads.filter((l) => STAGES.some((s) => l.drafts[s].body && !l.sentDates[s]) && !["Disqualified", "Client Won"].includes(l.status));
@@ -130,8 +156,23 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F3EC] text-[#12283C]">
-      <Sidebar view={view} setView={setView} onAddLead={addLead} me={me} saving={saving} onSwitchIdentity={clear} />
-      <MobileTopBar me={me} saving={saving} onSwitchIdentity={clear} />
+      <Sidebar
+        view={view}
+        setView={setView}
+        onAddLead={addLead}
+        me={me}
+        saving={saving}
+        onSwitchIdentity={clear}
+        activeCity={activeCity}
+        onOpenSearch={openQuickSearch}
+      />
+      <MobileTopBar me={me} saving={saving} onSwitchIdentity={clear} onOpenSearch={openQuickSearch} />
+      <QuickSearch
+        open={quickSearchOpen}
+        onClose={() => setQuickSearchOpen(false)}
+        leads={leads}
+        onSelectLead={(id) => { setQuickSearchOpen(false); goToLead(id); }}
+      />
 
       <main className="md:pl-64 pb-32 md:pb-10">
         <div key={view} className="px-4 sm:px-6 py-6 animate-fade-in">
@@ -167,6 +208,20 @@ export default function App() {
             </div>
           )}
 
+          {view === "cities" && (
+            <div className="max-w-6xl mx-auto">
+              <CitiesView
+                cityGroups={cityGroups}
+                activeCity={activeCity}
+                completedCities={completedCities}
+                onSetActiveCity={setActiveCity}
+                onMarkComplete={markCityComplete}
+                onReopenCity={reopenCity}
+                onViewCity={viewCity}
+              />
+            </div>
+          )}
+
           {view === "list" && (
             <div className="max-w-6xl mx-auto">
               <LeadsList
@@ -178,6 +233,9 @@ export default function App() {
                 setStatusFilter={setStatusFilter}
                 assigneeFilter={assigneeFilter}
                 setAssigneeFilter={setAssigneeFilter}
+                cityFilter={cityFilter}
+                setCityFilter={setCityFilter}
+                allCities={allCities}
                 onSelectLead={goToLead}
                 onAddLead={addLead}
               />
