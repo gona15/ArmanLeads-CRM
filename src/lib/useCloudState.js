@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import { ROW_ID, TABLE, DEFAULT_STATE } from "./constants";
+import { ROW_ID, TABLE, DEFAULT_STATE, normalizeLead } from "./constants";
+
+// Normalizes every lead in a loaded/incoming state blob so schema
+// additions never crash on rows saved under an older shape.
+function normalizeState(raw) {
+  const state = { ...DEFAULT_STATE, ...raw };
+  return { ...state, leads: (state.leads || []).map(normalizeLead) };
+}
 
 // ---------- Supabase-backed shared state ----------
 // Moved verbatim from App.jsx — same table, same row id, same realtime
@@ -18,7 +25,7 @@ export function useCloudState() {
         await supabase.from(TABLE).insert({ id: ROW_ID, data: DEFAULT_STATE });
         setState(DEFAULT_STATE);
       } else {
-        setState({ ...DEFAULT_STATE, ...data.data });
+        setState(normalizeState(data.data));
       }
       setLoaded(true);
     })();
@@ -26,7 +33,7 @@ export function useCloudState() {
     channelRef.current = supabase
       .channel("armanleads-sync")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: TABLE, filter: `id=eq.${ROW_ID}` }, (payload) => {
-        setState({ ...DEFAULT_STATE, ...payload.new.data });
+        setState(normalizeState(payload.new.data));
       })
       .subscribe();
 

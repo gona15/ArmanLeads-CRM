@@ -3,58 +3,22 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { AlertTriangle, Save, User, TrendingUp, Star, ChevronRight, Send, Building2 } from "lucide-react";
 import PostageMeter from "./PostageMeter";
 import StatusBadge from "./ui/StatusBadge";
+import { QueueCard, QueueRow } from "./ui/QueueCard";
 import { STAGE_LABEL, STATUS_COLOR } from "../lib/constants";
-import { hexToRgba } from "../lib/theme";
+import { hexToRgba, BRAND_MAROON } from "../lib/theme";
+import { useCountUp } from "../lib/useCountUp";
 
-function KpiCard({ icon: Icon, label, value, accent, delay = 0 }) {
+function KpiCard({ icon: Icon, label, value, suffix = "", accent, delay = 0 }) {
+  const display = useCountUp(value);
   return (
-    <div className="surface p-4 sm:p-5 animate-fade-slide-up" style={{ animationDelay: `${delay}ms` }}>
+    <div className="surface p-4 sm:p-5 animate-fade-slide-up hover:shadow-[0_4px_16px_rgba(18,40,60,0.08)] transition-shadow duration-200" style={{ animationDelay: `${delay}ms` }}>
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-[#B8B2A0]">{label}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: hexToRgba(accent, 0.12) }}>
           <Icon size={14} style={{ color: accent }} />
         </div>
       </div>
-      <div className="font-mono text-2xl sm:text-[28px] font-bold text-[#12283C] tabular-nums leading-none">{value}</div>
-    </div>
-  );
-}
-
-function QueueRow({ title, subtitle, right, onClick, delay = 0 }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ animationDelay: `${delay}ms` }}
-      className="animate-fade-slide-up w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-[#F7F5EF] border border-transparent hover:border-[#EEEAE0] transition-colors"
-    >
-      <div className="min-w-0">
-        <div className="text-sm font-medium text-[#12283C] truncate">{title}</div>
-        <div className="text-[11px] text-[#8A8574] font-mono truncate mt-0.5">{subtitle}</div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">{right}</div>
-    </button>
-  );
-}
-
-function QueueCard({ icon: Icon, accent, title, count, emptyText, children }) {
-  return (
-    <div className="surface p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2" style={{ color: accent }}>
-          <Icon size={16} />
-          <h3 className="font-serif text-base text-[#12283C]">{title}</h3>
-        </div>
-        {count > 0 && (
-          <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: hexToRgba(accent, 0.12), color: accent }}>
-            {count}
-          </span>
-        )}
-      </div>
-      {count === 0 ? (
-        <p className="text-sm text-[#B8B2A0] py-2">{emptyText}</p>
-      ) : (
-        <div className="space-y-1 max-h-64 overflow-y-auto scroll-thin -mx-1 px-1">{children}</div>
-      )}
+      <div className="font-mono text-2xl sm:text-[28px] font-bold text-[#12283C] tabular-nums leading-none">{display}{suffix}</div>
     </div>
   );
 }
@@ -87,8 +51,8 @@ export default function Dashboard({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard icon={Send} label="Emails Sent" value={totalSentEmails} accent="#2F6F62" delay={0} />
-        <KpiCard icon={TrendingUp} label="Reply Rate" value={`${replyRate}%`} accent="#5B8DB8" delay={40} />
-        <KpiCard icon={Star} label="Conversion" value={`${convRate}%`} accent="#C99A3C" delay={80} />
+        <KpiCard icon={TrendingUp} label="Reply Rate" value={Number(replyRate)} suffix="%" accent="#5B8DB8" delay={40} />
+        <KpiCard icon={Star} label="Conversion" value={Number(convRate)} suffix="%" accent="#C99A3C" delay={80} />
         <KpiCard icon={Building2} label="Total Clinics" value={totalLeads} accent="#12283C" delay={120} />
       </div>
 
@@ -106,7 +70,13 @@ export default function Dashboard({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <QueueCard icon={AlertTriangle} accent="#D2691E" title="Follow-ups Due" count={followupsDue.length} emptyText="Nothing due — clean queue.">
+        <QueueCard
+          icon={AlertTriangle}
+          accent={followupsDue.some(({ fu }) => fu.daysOverdue > 0) ? BRAND_MAROON : "#D2691E"}
+          title="Follow-ups Due"
+          count={followupsDue.length}
+          emptyText="Nothing due — clean queue."
+        >
           {followupsDue.map(({ l, fu }, i) => (
             <QueueRow
               key={l.id}
@@ -114,7 +84,13 @@ export default function Dashboard({
               onClick={() => onSelectLead(l.id)}
               title={l.name || "Unnamed clinic"}
               subtitle={`${STAGE_LABEL[fu.dueStage]} · ${fu.daysOverdue > 0 ? `${fu.daysOverdue}d overdue` : "due today"}`}
-              right={<ChevronRight size={14} className="text-[#B8B2A0]" />}
+              right={
+                fu.daysOverdue > 0 ? (
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: BRAND_MAROON }} title="Overdue" />
+                ) : (
+                  <ChevronRight size={14} className="text-[#B8B2A0]" />
+                )
+              }
             />
           ))}
         </QueueCard>

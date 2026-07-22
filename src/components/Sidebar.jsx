@@ -1,13 +1,15 @@
 import React from "react";
-import { LayoutDashboard, Building2, Plus, Mail, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Plus, Mail, LogOut, Sunrise, MapPin, Search } from "lucide-react";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "today", label: "Today", icon: Sunrise },
+  { key: "cities", label: "Cities", icon: MapPin },
   { key: "list", label: "All Clinics", icon: Building2 },
 ];
 
-export default function Sidebar({ view, setView, onAddLead, me, saving, onSwitchIdentity }) {
+export default function Sidebar({ view, setView, onAddLead, me, saving, onSwitchIdentity, activeCity, onOpenSearch }) {
   return (
     <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:left-0 border-r border-[#E4E0D5] bg-white/70 backdrop-blur-md z-20">
       <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
@@ -20,12 +22,26 @@ export default function Sidebar({ view, setView, onAddLead, me, saving, onSwitch
         </div>
       </div>
 
-      <div className="px-3">
+      {activeCity && (
+        <button onClick={() => setView("cities")} className="mx-3 mb-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F6F62]/8 hover:bg-[#2F6F62]/12 transition-colors text-left">
+          <MapPin size={12} className="text-[#2F6F62] shrink-0" />
+          <span className="text-[11px] font-mono text-[#2F6F62] truncate">Active: {activeCity}</span>
+        </button>
+      )}
+
+      <div className="px-3 space-y-2">
         <button
           onClick={onAddLead}
           className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#2F6F62] text-white text-sm font-medium py-2.5 hover:bg-[#1F5C4E] active:scale-[0.98] transition-all duration-150 shadow-[0_2px_6px_rgba(47,111,98,0.25)]"
         >
           <Plus size={15} /> New Clinic
+        </button>
+        <button
+          onClick={onOpenSearch}
+          className="w-full flex items-center justify-between gap-1.5 rounded-xl border border-[#E4E0D5] bg-white text-[#8A8574] text-sm py-2 px-3 hover:border-[#12283C]/30 hover:text-[#12283C] transition-colors"
+        >
+          <span className="flex items-center gap-1.5"><Search size={14} /> Quick search</span>
+          <span className="text-[10px] font-mono border border-[#E4E0D5] rounded px-1 py-0.5 text-[#B8B2A0]">⌘K</span>
         </button>
       </div>
 

@@ -1,9 +1,11 @@
 import React from "react";
+import { useCountUp } from "../lib/useCountUp";
 
 // The signature element of the dashboard — kept the exact same circle math
 // as the original (r=42, circumference-based stroke offset), just given a
 // little more presence and a softer surrounding treatment.
 export default function PostageMeter({ sentToday, goal }) {
+  const displaySent = useCountUp(sentToday);
   const pct = Math.min(100, Math.round((sentToday / Math.max(1, goal)) * 100));
   const r = 42, c = 2 * Math.PI * r;
   const offset = c - (pct / 100) * c;
@@ -26,7 +28,7 @@ export default function PostageMeter({ sentToday, goal }) {
           </defs>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-2xl font-bold text-[#12283C] leading-none tabular-nums">{sentToday}</span>
+          <span className="font-mono text-2xl font-bold text-[#12283C] leading-none tabular-nums">{displaySent}</span>
           <span className="font-mono text-[9px] text-[#8A8574] tracking-wide mt-1">/ {goal} TODAY</span>
         </div>
       </div>
