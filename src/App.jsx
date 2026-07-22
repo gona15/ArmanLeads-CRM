@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useCloudState, useWhoAmI } from "./lib/useCloudState";
+import { supabase } from "./supabaseClient";
 import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
 import { MobileTopBar, MobileBottomBar } from "./components/MobileNav";
@@ -31,6 +32,10 @@ export default function App() {
   const [confettiKey, setConfettiKey] = useState(0);
 
   const showToast = (message, actionLabel, onAction, duration) => setToast({ message, actionLabel, onAction, duration, key: Date.now() });
+
+  // The identity-picker "switch" action now also signs out of the real
+  // Supabase Auth session backing it — one control, both layers reset.
+  const handleSwitchIdentity = () => { supabase.auth.signOut(); clear(); };
 
   const leads = state?.leads || [];
   const dailyGoal = state?.dailyGoal ?? 25;
@@ -186,11 +191,11 @@ export default function App() {
         onAddLead={addLead}
         me={me}
         saving={saving}
-        onSwitchIdentity={clear}
+        onSwitchIdentity={handleSwitchIdentity}
         activeCity={activeCity}
         onOpenSearch={openQuickSearch}
       />
-      <MobileTopBar me={me} saving={saving} onSwitchIdentity={clear} onOpenSearch={openQuickSearch} />
+      <MobileTopBar me={me} saving={saving} onSwitchIdentity={handleSwitchIdentity} onOpenSearch={openQuickSearch} />
       <QuickSearch
         open={quickSearchOpen}
         onClose={() => setQuickSearchOpen(false)}
