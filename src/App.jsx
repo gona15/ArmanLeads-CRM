@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Mail } from "lucide-react";
 import { useCloudState, useWhoAmI } from "./lib/useCloudState";
 import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
@@ -11,10 +10,15 @@ import LeadDetail from "./components/LeadDetail";
 import TodayView from "./components/TodayView";
 import CitiesView from "./components/CitiesView";
 import QuickSearch from "./components/QuickSearch";
+import Toast from "./components/ui/Toast";
+import Confetti from "./components/ui/Confetti";
+import SkeletonScreen from "./components/SkeletonScreen";
 
 export default function App() {
   const { state, loaded, saving, persist } = useCloudState();
   const { me, choose, clear } = useWhoAmI();
+  const stateRef = React.useRef(state);
+  stateRef.current = state;
   const [view, setView] = useState("dashboard");
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
@@ -23,6 +27,10 @@ export default function App() {
   const [cityFilter, setCityFilter] = useState("All");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [confettiKey, setConfettiKey] = useState(0);
+
+  const showToast = (message, actionLabel, onAction, duration) => setToast({ message, actionLabel, onAction, duration, key: Date.now() });
 
   const leads = state?.leads || [];
   const dailyGoal = state?.dailyGoal ?? 25;
@@ -43,16 +51,27 @@ export default function App() {
       if (l.id !== id) return l;
       const merged = { ...l, ...patch, lastUpdated: todayISO(), lastUpdatedBy: me || l.lastUpdatedBy };
       if (activityNote) merged.activityLog = logActivity(l, me, activityNote);
+      if (patch.status === "Client Won" && l.status !== "Client Won") {
+        setConfettiKey((k) => k + 1);
+        showToast(`🎉 ${l.name || "Clinic"} — client won!`, null, null, 4000);
+      }
       return merged;
     });
     saveLeads(next);
   };
 
   const deleteLead = (id) => {
+    const removed = leads.find((l) => l.id === id);
     saveLeads(leads.filter((l) => l.id !== id));
     setView("list");
     setSelectedId(null);
     setConfirmDelete(false);
+    if (removed) {
+      showToast(`${removed.name || "Clinic"} deleted`, "Undo", () => {
+        const current = stateRef.current;
+        persist({ ...current, leads: [removed, ...(current?.leads || [])] });
+      });
+    }
   };
 
   // Duplicate check is a warning, not a block — same name + same city,
@@ -109,16 +128,7 @@ export default function App() {
   }, []);
 
   if (!loaded || !state) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F3EC]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3A8172] to-[#1F5C4E] flex items-center justify-center animate-pulse">
-            <Mail size={18} className="text-white" />
-          </div>
-          <div className="font-mono text-[#8A8574] text-xs tracking-wide">loading ledger…</div>
-        </div>
-      </div>
-    );
+    return <SkeletonScreen />;
   }
 
   if (!me) {
@@ -134,6 +144,15 @@ export default function App() {
   });
   const allCities = [...new Set(leads.map((l) => l.city).filter(Boolean))].sort();
   const cityGroups = groupByCity(leads);
+  // Board mode intentionally ignores statusFilter — the whole point is
+  // seeing every status column at once — but still respects search/city/assignee.
+  const boardLeads = leads.filter((l) => {
+    const matchesSearch = !search || (l.name || "").toLowerCase().includes(search.toLowerCase()) || (l.city || "").toLowerCase().includes(search.toLowerCase());
+    const matchesAssignee = assigneeFilter === "All" || l.assignedTo === assigneeFilter;
+    const matchesCity = cityFilter === "All" || l.city === cityFilter;
+    return matchesSearch && matchesAssignee && matchesCity;
+  });
+  const dropLeadOnStatus = (id, status) => updateLead(id, { status }, `Moved to ${status} (board)`);
 
   const followupsDue = leads.map((l) => ({ l, fu: computeFollowupState(l) })).filter((x) => x.fu).sort((a, b) => b.fu.daysOverdue - a.fu.daysOverdue);
   const draftsInProgress = leads.filter((l) => STAGES.some((s) => l.drafts[s].body && !l.sentDates[s]) && !["Disqualified", "Client Won"].includes(l.status));
@@ -155,7 +174,12 @@ export default function App() {
   const selected = leads.find((l) => l.id === selectedId);
 
   return (
-    <div className="min-h-screen bg-[#F5F3EC] text-[#12283C]">
+    <div className="min-h-screen bg-[#F5F3EC] text-[#12283C] relative isolate">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="animate-mesh-drift absolute -top-40 -left-32 w-[520px] h-[520px] rounded-full opacity-[0.10] blur-3xl" style={{ background: "#2F6F62" }} />
+        <div className="animate-mesh-drift absolute top-1/3 -right-40 w-[480px] h-[480px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "#7A1F2B", animationDelay: "-6s" }} />
+        <div className="animate-mesh-drift absolute -bottom-32 left-1/4 w-[440px] h-[440px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "#C99A3C", animationDelay: "-12s" }} />
+      </div>
       <Sidebar
         view={view}
         setView={setView}
@@ -173,6 +197,8 @@ export default function App() {
         leads={leads}
         onSelectLead={(id) => { setQuickSearchOpen(false); goToLead(id); }}
       />
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <Confetti burstKey={confettiKey} />
 
       <main className="md:pl-64 pb-32 md:pb-10">
         <div key={view} className="px-4 sm:px-6 py-6 animate-fade-in">
@@ -227,6 +253,8 @@ export default function App() {
               <LeadsList
                 leads={leads}
                 filtered={filtered}
+                boardLeads={boardLeads}
+                onDropLead={dropLeadOnStatus}
                 search={search}
                 setSearch={setSearch}
                 statusFilter={statusFilter}
