@@ -1,17 +1,39 @@
-import React from "react";
-import { Search, MapPin, ChevronRight, Building2, Plus } from "lucide-react";
+import React, { useState } from "react";
+import { Search, MapPin, ChevronRight, Building2, Plus, List, LayoutGrid } from "lucide-react";
 import Select from "./ui/Select";
 import StatusBadge from "./ui/StatusBadge";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
 import Avatar from "./ui/Avatar";
 import EmptyState from "./ui/EmptyState";
 import Button from "./ui/Button";
+import BoardView from "./BoardView";
 import { STATUSES, ASSIGNEES } from "../lib/constants";
 import { colorForSeed } from "../lib/theme";
+
+function ViewToggle({ mode, setMode }) {
+  return (
+    <div className="flex items-center gap-0.5 bg-[#EEEAE0]/60 rounded-xl p-1">
+      {[{ key: "list", icon: List }, { key: "board", icon: LayoutGrid }].map(({ key, icon: Icon }) => (
+        <button
+          key={key}
+          onClick={() => setMode(key)}
+          aria-label={key}
+          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+            mode === key ? "bg-white text-[#12283C] shadow-[0_1px_2px_rgba(18,40,60,0.1)]" : "text-[#8A8574] hover:text-[#12283C]"
+          }`}
+        >
+          <Icon size={15} />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function LeadsList({
   leads,
   filtered,
+  boardLeads,
+  onDropLead,
   search,
   setSearch,
   statusFilter,
@@ -24,18 +46,25 @@ export default function LeadsList({
   onSelectLead,
   onAddLead,
 }) {
+  const [mode, setMode] = useState("list");
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl text-[#12283C]">All Clinics</h1>
           <p className="text-sm text-[#8A8574] mt-0.5">
-            {filtered.length} of {leads.length} clinics{filtered.length !== leads.length ? " match your filters" : ""}
+            {mode === "list"
+              ? `${filtered.length} of ${leads.length} clinics${filtered.length !== leads.length ? " match your filters" : ""}`
+              : `${boardLeads.length} clinics · drag a card to change its status`}
           </p>
         </div>
-        <Button variant="primary" onClick={onAddLead} className="hidden sm:inline-flex">
-          <Plus size={15} /> New Clinic
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <ViewToggle mode={mode} setMode={setMode} />
+          <Button variant="primary" onClick={onAddLead} className="hidden sm:inline-flex">
+            <Plus size={15} /> New Clinic
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2.5">
@@ -55,10 +84,12 @@ export default function LeadsList({
               {allCities.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
           )}
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="!w-auto min-w-[136px]">
-            <option>All</option>
-            {STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </Select>
+          {mode === "list" && (
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="!w-auto min-w-[136px]">
+              <option>All</option>
+              {STATUSES.map((s) => <option key={s}>{s}</option>)}
+            </Select>
+          )}
           <Select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="!w-auto min-w-[110px]">
             <option>All</option>
             {ASSIGNEES.map((a) => <option key={a}>{a}</option>)}
@@ -66,41 +97,45 @@ export default function LeadsList({
         </div>
       </div>
 
-      <div className="surface overflow-hidden">
-        {filtered.length === 0 && (
-          <EmptyState
-            icon={Building2}
-            title="No clinics match"
-            message="Try adjusting your search or filters, or add a new clinic to get started."
-          />
-        )}
-        <div className="divide-y divide-[#EEEAE0]">
-          {filtered.map((l, i) => (
-            <button
-              key={l.id}
-              onClick={() => onSelectLead(l.id)}
-              style={{ animationDelay: `${Math.min(i, 14) * 25}ms` }}
-              className="animate-fade-in w-full text-left flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[#F7F5EF] active:scale-[0.995] transition-all duration-150 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar name={l.name || "Unnamed"} color={colorForSeed(l.name || l.id)} size={38} className="hidden sm:flex" />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-[#12283C] truncate">{l.name || "Unnamed clinic"}</div>
-                  <div className="text-[11px] text-[#8A8574] flex items-center gap-1 mt-0.5">
-                    <MapPin size={10} className="shrink-0" />
-                    <span className="truncate">{l.city || "—"}</span>
+      {mode === "board" ? (
+        <BoardView leads={boardLeads} onSelectLead={onSelectLead} onDropLead={onDropLead} />
+      ) : (
+        <div className="surface overflow-hidden">
+          {filtered.length === 0 && (
+            <EmptyState
+              icon={Building2}
+              title="No clinics match"
+              message="Try adjusting your search or filters, or add a new clinic to get started."
+            />
+          )}
+          <div className="divide-y divide-[#EEEAE0]">
+            {filtered.map((l, i) => (
+              <button
+                key={l.id}
+                onClick={() => onSelectLead(l.id)}
+                style={{ animationDelay: `${Math.min(i, 14) * 25}ms` }}
+                className="animate-fade-in w-full text-left flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[#F7F5EF] active:scale-[0.995] transition-all duration-150 group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar name={l.name || "Unnamed"} color={colorForSeed(l.name || l.id)} size={38} className="hidden sm:flex" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-[#12283C] truncate">{l.name || "Unnamed clinic"}</div>
+                    <div className="text-[11px] text-[#8A8574] flex items-center gap-1 mt-0.5">
+                      <MapPin size={10} className="shrink-0" />
+                      <span className="truncate">{l.city || "—"}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                <AssigneeAvatar name={l.assignedTo} size={24} className="hidden sm:inline-flex" />
-                <StatusBadge status={l.status} />
-                <ChevronRight size={15} className="text-[#B8B2A0] group-hover:translate-x-0.5 transition-transform hidden sm:block" />
-              </div>
-            </button>
-          ))}
+                <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                  <AssigneeAvatar name={l.assignedTo} size={24} className="hidden sm:inline-flex" />
+                  <StatusBadge status={l.status} />
+                  <ChevronRight size={15} className="text-[#B8B2A0] group-hover:translate-x-0.5 transition-transform hidden sm:block" />
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -44,11 +44,20 @@
       @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
       @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+      @keyframes confettiFall {
+        0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+        100% { transform: translate(var(--drift), 60vh) rotate(var(--rotate)); opacity: 0; }
+      }
+      @keyframes meshDrift {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(3%, -2%) scale(1.05); }
+      }
 
       .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
       .animate-fade-slide-up { animation: fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
       .animate-scale-in { animation: scaleIn 0.18s cubic-bezier(0.16,1,0.3,1) both; }
       .animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+      .animate-mesh-drift { animation: meshDrift 18s ease-in-out infinite; }
 
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
