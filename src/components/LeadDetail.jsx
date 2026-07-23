@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick } from "lucide-react";
 import CityAutocomplete from "./CityAutocomplete";
 import AngleTypeSelect from "./AngleTypeSelect";
 import StatusBadge from "./ui/StatusBadge";
@@ -37,7 +37,7 @@ function PersonalContentWarning({ text }) {
 
 export default function LeadDetail({
   lead, onBack, onUpdate, onMarkSent, onUnmarkSent, onDelete, confirmDelete, setConfirmDelete,
-  customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates,
+  customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates, lastClickedAt,
 }) {
   const [activeStage, setActiveStage] = useState("initial");
   const [confirmStage, setConfirmStage] = useState(null); // { stage, action: "send" | "undo" }
@@ -229,6 +229,10 @@ export default function LeadDetail({
               </Button>
             </>
           )}
+        </div>
+        <div className="mt-2.5 text-[11px] font-mono flex items-center gap-1.5" style={{ color: lastClickedAt ? "#2F6F62" : "#B8B2A0" }}>
+          <MousePointerClick size={12} />
+          {lastClickedAt ? `Link clicked ${fmtDateTime(lastClickedAt)}` : "Not clicked yet"}
         </div>
       </SectionCard>
 

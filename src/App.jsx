@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useCloudState, useWhoAmI } from "./lib/useCloudState";
+import { useCloudState, useWhoAmI, useLinkClicks } from "./lib/useCloudState";
 import { supabase } from "./supabaseClient";
 import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
@@ -18,6 +18,7 @@ import SkeletonScreen from "./components/SkeletonScreen";
 export default function App() {
   const { state, loaded, saving, persist } = useCloudState();
   const { me, choose, clear } = useWhoAmI();
+  const linkClicks = useLinkClicks();
   const stateRef = React.useRef(state);
   stateRef.current = state;
   const [view, setView] = useState("dashboard");
@@ -290,6 +291,7 @@ export default function App() {
                 onAddCustomAngle={addCustomAngleType}
                 allAngleTypes={allAngleTypes}
                 duplicates={findDuplicates(selected)}
+                lastClickedAt={linkClicks[selected.id]}
               />
             </div>
           )}
