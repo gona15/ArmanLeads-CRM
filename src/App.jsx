@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useCloudState, useWhoAmI, useLinkClicks } from "./lib/useCloudState";
 import { supabase } from "./supabaseClient";
-import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity } from "./lib/constants";
+import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity, normalizeClicks } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
 import { MobileTopBar, MobileBottomBar } from "./components/MobileNav";
 import LoginScreen from "./components/LoginScreen";
@@ -18,7 +18,7 @@ import SkeletonScreen from "./components/SkeletonScreen";
 export default function App() {
   const { state, loaded, saving, persist } = useCloudState();
   const { me, choose, clear } = useWhoAmI();
-  const linkClicks = useLinkClicks();
+  const rawClicks = useLinkClicks();
   const stateRef = React.useRef(state);
   stateRef.current = state;
   const [view, setView] = useState("dashboard");
@@ -43,6 +43,7 @@ export default function App() {
   const customAngleTypes = state?.customAngleTypes || [];
   const activeCity = state?.activeCity || "";
   const completedCities = state?.completedCities || [];
+  const linkClicks = React.useMemo(() => normalizeClicks(rawClicks, leads), [rawClicks, leads]);
 
   const saveLeads = (nextLeads) => persist({ ...state, leads: nextLeads });
   const saveGoal = (g) => persist({ ...state, dailyGoal: g });
@@ -177,6 +178,14 @@ export default function App() {
     const replied = withAngle.filter((l) => l.repliedDate).length;
     return { name: a, rate: withAngle.length ? Math.round((replied / withAngle.length) * 100) : 0, count: withAngle.length };
   }).filter((a) => a.count > 0);
+  const clickedLeadIds = new Set(Object.keys(linkClicks));
+  const clickedCount = leads.filter((l) => l.sentDates.initial && clickedLeadIds.has(l.id)).length;
+  const clickRate = withInitial ? ((clickedCount / withInitial) * 100).toFixed(1) : "0.0";
+  const angleClickStats = allAngleTypes.map((a) => {
+    const withAngle = leads.filter((l) => l.angleType === a && l.sentDates.initial);
+    const clicked = withAngle.filter((l) => clickedLeadIds.has(l.id)).length;
+    return { name: a, rate: withAngle.length ? Math.round((clicked / withAngle.length) * 100) : 0, count: withAngle.length };
+  }).filter((a) => a.count > 0);
   const selected = leads.find((l) => l.id === selectedId);
 
   return (
@@ -224,6 +233,8 @@ export default function App() {
                 totalLeads={leads.length}
                 statusCounts={statusCounts}
                 angleStats={angleStats}
+                clickRate={clickRate}
+                angleClickStats={angleClickStats}
                 onSelectLead={goToLead}
               />
             </div>
@@ -291,7 +302,7 @@ export default function App() {
                 onAddCustomAngle={addCustomAngleType}
                 allAngleTypes={allAngleTypes}
                 duplicates={findDuplicates(selected)}
-                lastClickedAt={linkClicks[selected.id]}
+                clickInfo={linkClicks[selected.id]}
               />
             </div>
           )}

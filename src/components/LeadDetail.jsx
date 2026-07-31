@@ -26,7 +26,7 @@ function SectionCard({ icon: Icon, title, children }) {
 
 export default function LeadDetail({
   lead, onBack, onUpdate, onMarkSent, onUnmarkSent, onDelete, confirmDelete, setConfirmDelete,
-  customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates, lastClickedAt,
+  customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates, clickInfo,
 }) {
   const [activeStage, setActiveStage] = useState("initial");
   const [confirmStage, setConfirmStage] = useState(null); // { stage, action: "send" | "undo" }
@@ -233,9 +233,11 @@ export default function LeadDetail({
             </>
           )}
         </div>
-        <div className="mt-2.5 text-[11px] font-mono flex items-center gap-1.5" style={{ color: lastClickedAt ? "#2F6F62" : "#B8B2A0" }}>
+        <div className="mt-2.5 text-[11px] font-mono flex items-center gap-1.5" style={{ color: clickInfo ? "#2F6F62" : "#B8B2A0" }}>
           <MousePointerClick size={12} />
-          {lastClickedAt ? `Link clicked ${fmtDateTime(lastClickedAt)}` : "Not clicked yet"}
+          {clickInfo
+            ? `Clicked${clickInfo.count > 1 ? ` ${clickInfo.count}x, most recently` : ""} ${fmtDateTime(clickInfo.last)}`
+            : "Not clicked yet"}
         </div>
       </SectionCard>
 

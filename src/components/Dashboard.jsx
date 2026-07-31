@@ -1,6 +1,6 @@
 import React from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { AlertTriangle, Save, User, TrendingUp, Star, ChevronRight, Send, Building2 } from "lucide-react";
+import { AlertTriangle, Save, User, TrendingUp, Star, ChevronRight, Send, Building2, MousePointerClick } from "lucide-react";
 import PostageMeter from "./PostageMeter";
 import StatusBadge from "./ui/StatusBadge";
 import { QueueCard, QueueRow } from "./ui/QueueCard";
@@ -37,6 +37,8 @@ export default function Dashboard({
   totalLeads,
   statusCounts,
   angleStats,
+  clickRate,
+  angleClickStats,
   onSelectLead,
 }) {
   const hour = new Date().getHours();
@@ -49,11 +51,12 @@ export default function Dashboard({
         <p className="text-sm text-[#8A8574] mt-0.5">Here's where things stand today.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <KpiCard icon={Send} label="Emails Sent" value={totalSentEmails} accent="#2F6F62" delay={0} />
         <KpiCard icon={TrendingUp} label="Reply Rate" value={Number(replyRate)} suffix="%" accent="#5B8DB8" delay={40} />
-        <KpiCard icon={Star} label="Conversion" value={Number(convRate)} suffix="%" accent="#C99A3C" delay={80} />
-        <KpiCard icon={Building2} label="Total Clinics" value={totalLeads} accent="#12283C" delay={120} />
+        <KpiCard icon={MousePointerClick} label="Click Rate" value={Number(clickRate)} suffix="%" accent="#8B6FB8" delay={80} />
+        <KpiCard icon={Star} label="Conversion" value={Number(convRate)} suffix="%" accent="#C99A3C" delay={120} />
+        <KpiCard icon={Building2} label="Total Clinics" value={totalLeads} accent="#12283C" delay={160} />
       </div>
 
       <div className="surface p-5 sm:p-6 flex items-center justify-between flex-wrap gap-4">
@@ -122,7 +125,7 @@ export default function Dashboard({
         </QueueCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="surface p-4 sm:p-5">
           <h3 className="font-serif text-base mb-3 flex items-center gap-2 text-[#12283C]"><TrendingUp size={16} className="text-[#2F6F62]" /> Pipeline Overview</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -159,6 +162,29 @@ export default function Dashboard({
                   cursor={{ fill: "rgba(18,40,60,0.04)" }}
                 />
                 <Bar dataKey="rate" fill="#2F6F62" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="surface p-4 sm:p-5">
+          <h3 className="font-serif text-base mb-1 flex items-center gap-2 text-[#12283C]"><MousePointerClick size={16} className="text-[#8B6FB8]" /> Click Performance</h3>
+          <p className="text-[11px] text-[#8A8574] mb-2">Click rate by personalization angle used.</p>
+          {!angleClickStats || angleClickStats.length === 0 ? (
+            <p className="text-sm text-[#B8B2A0] py-8 text-center">No clicks yet — this fills in as tracked links get clicked.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={angleClickStats}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EEEAE0" />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#8A8574" }} angle={-15} textAnchor="end" height={50} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#8A8574" }} unit="%" axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(v, n, p) => [`${v}% (n=${p.payload.count})`, "Click rate"]}
+                  contentStyle={{ borderRadius: 12, border: "1px solid #E4E0D5", fontSize: 12, boxShadow: "0 8px 24px rgba(18,40,60,0.12)" }}
+                  labelStyle={{ color: "#12283C", fontWeight: 600 }}
+                  cursor={{ fill: "rgba(18,40,60,0.04)" }}
+                />
+                <Bar dataKey="rate" fill="#8B6FB8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

@@ -130,6 +130,46 @@ export function groupByCity(leads) {
   });
 }
 
+// ---------- click-tracking normalization ----------
+// The public /r/{id} redirect occasionally logs a corrupted lead_id —
+// observed live in the link_clicks table: near-simultaneous duplicate rows
+// where one has the exact real id and the other has the same id missing or
+// substituting only its first character (e.g. "l2tiiqt6" alongside
+// "2tiiqt6" or "12tiiqt6", ~10ms apart). Reads as an email security/link
+// scanner pre-fetching the link and mangling the leading character on the
+// way through — not something this app's own code produces. Resolve those
+// back to the real lead and collapse near-simultaneous hits into one visit
+// rather than double-counting or losing them to an unmatched id.
+export function normalizeClicks(rawClicks, leads) {
+  const realIds = new Set(leads.map((l) => l.id));
+  const resolved = (rawClicks || []).map((row) => {
+    if (realIds.has(row.lead_id)) return { ...row, resolvedId: row.lead_id };
+    const match = leads.find((l) => {
+      const id = l.id;
+      if (id.length === row.lead_id.length + 1 && id.slice(1) === row.lead_id) return true;
+      if (id.length === row.lead_id.length && id.slice(1) === row.lead_id.slice(1) && id[0] !== row.lead_id[0]) return true;
+      return false;
+    });
+    return { ...row, resolvedId: match ? match.id : row.lead_id };
+  });
+
+  const byLead = {};
+  for (const row of resolved) {
+    (byLead[row.resolvedId] ||= []).push(row.clicked_at);
+  }
+  const result = {};
+  for (const [leadId, timestamps] of Object.entries(byLead)) {
+    const sorted = [...timestamps].sort();
+    const visits = [];
+    for (const t of sorted) {
+      const last = visits[visits.length - 1];
+      if (!last || new Date(t) - new Date(last) > 5000) visits.push(t);
+    }
+    result[leadId] = { count: visits.length, first: visits[0], last: visits[visits.length - 1] };
+  }
+  return result;
+}
+
 export function computeFollowupState(lead) {
   if (["Disqualified", "Client Won", "Replied", "Booked Call"].includes(lead.status)) return null;
   if (!lead.sentDates.initial) return null;
