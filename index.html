@@ -42,6 +42,15 @@
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+      /* A real overshoot-and-settle spring, not just an ease-out fade — for
+         the handful of moments that should feel physical rather than merely
+         quick: modals, toasts. Used deliberately, not everywhere, since
+         restraint is part of the point. */
+      @keyframes springIn {
+        0% { opacity: 0; transform: scale(0.92) translateY(4px); }
+        55% { opacity: 1; transform: scale(1.015) translateY(0); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+      }
       @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
       @keyframes confettiFall {
         0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
@@ -55,6 +64,7 @@
       .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
       .animate-fade-slide-up { animation: fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
       .animate-scale-in { animation: scaleIn 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-spring-in { animation: springIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
       .animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
       .animate-mesh-drift { animation: meshDrift 18s ease-in-out infinite; }
 

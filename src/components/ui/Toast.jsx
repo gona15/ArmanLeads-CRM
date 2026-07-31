@@ -13,7 +13,7 @@ export default function Toast({ toast, onDismiss }) {
   if (!toast) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-fade-slide-up">
+    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-spring-in">
       <div
         className="flex items-center gap-3 bg-[#12283C] text-white rounded-2xl pl-4 pr-2 py-2.5 max-w-[92vw]"
         style={{ boxShadow: "0 20px 40px -12px rgba(18,40,60,0.5)" }}

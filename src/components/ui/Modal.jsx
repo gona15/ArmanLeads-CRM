@@ -19,7 +19,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#12283C]/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
       <div
-        className={`relative w-full ${maxWidth} max-h-[85vh] overflow-y-auto bg-white rounded-2xl p-6 animate-scale-in`}
+        className={`relative w-full ${maxWidth} max-h-[85vh] overflow-y-auto bg-white rounded-2xl p-6 animate-spring-in`}
         style={{ boxShadow: "0 20px 50px -12px rgba(18,40,60,0.35), 0 4px 12px rgba(18,40,60,0.15)" }}
         role="dialog"
         aria-modal="true"
