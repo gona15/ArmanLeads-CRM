@@ -36,6 +36,10 @@ export default function LeadDetail({
   const setDraft = (stage, field, val) => onUpdate({ drafts: { ...lead.drafts, [stage]: { ...lead.drafts[stage], [field]: val } } });
   const setStageAngle = (stage, val) => onUpdate({ stageAngles: { ...lead.stageAngles, [stage]: val } });
   const wordCount = (lead.drafts[activeStage].body || "").trim().split(/\s+/).filter(Boolean).length;
+  // Real sent initials average 158 words (111-223 range, n=43) - a prior
+  // tightening pass targeted 111-131 and that discipline has drifted since.
+  // Not a hard limit, just a nudge back toward it as it creeps up.
+  const wordCountColor = wordCount > 200 ? BRAND_MAROON : wordCount > 160 ? "#C99A3C" : "#B8B2A0";
   const suggestedAngle = suggestNextAngle(lead, allAngleTypes || []);
   // Personal/family content is checked once, at the highest-stakes moment (right
   // before confirming a send) rather than as a persistent nag while drafting —
@@ -210,7 +214,7 @@ export default function LeadDetail({
           <div className="mt-1.5">
             <textarea value={lead.drafts[activeStage].body} onChange={(e) => setDraft(activeStage, "body", e.target.value)} className={textareaCls} rows={16} />
           </div>
-          <div className="text-[11px] text-[#B8B2A0] mt-1.5 text-right">{wordCount} words</div>
+          <div className="text-[11px] font-mono mt-1.5 text-right transition-colors" style={{ color: wordCountColor }}>{wordCount} words</div>
         </div>
 
         <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
@@ -274,7 +278,7 @@ export default function LeadDetail({
             autoFocus
           />
         </Field>
-        <div className="text-[11px] text-[#B8B2A0] mt-1.5 text-right">{wordCount} words</div>
+        <div className="text-[11px] font-mono mt-1.5 text-right transition-colors" style={{ color: wordCountColor }}>{wordCount} words</div>
       </Modal>
 
       <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete this clinic?" maxWidth="max-w-sm">
