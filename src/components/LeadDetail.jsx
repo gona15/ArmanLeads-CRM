@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick, Maximize2 } from "lucide-react";
 import CityAutocomplete from "./CityAutocomplete";
 import AngleTypeSelect from "./AngleTypeSelect";
 import StatusBadge from "./ui/StatusBadge";
@@ -24,29 +24,25 @@ function SectionCard({ icon: Icon, title, children }) {
   );
 }
 
-function PersonalContentWarning({ text }) {
-  const { flagged, matches } = detectPersonalContent(text);
-  if (!flagged) return null;
-  return (
-    <div className="mt-1.5 flex items-start gap-1.5 text-[11px]" style={{ color: BRAND_MAROON }}>
-      <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
-      <span>Possible personal/family content detected ("{matches[0]}") — check this doesn't belong in a draft.</span>
-    </div>
-  );
-}
-
 export default function LeadDetail({
   lead, onBack, onUpdate, onMarkSent, onUnmarkSent, onDelete, confirmDelete, setConfirmDelete,
   customAngleTypes, onAddCustomAngle, allAngleTypes, duplicates, lastClickedAt,
 }) {
   const [activeStage, setActiveStage] = useState("initial");
   const [confirmStage, setConfirmStage] = useState(null); // { stage, action: "send" | "undo" }
+  const [composeExpanded, setComposeExpanded] = useState(false);
   const fu = computeFollowupState(lead);
   const setField = (k, v) => onUpdate({ [k]: v });
   const setDraft = (stage, field, val) => onUpdate({ drafts: { ...lead.drafts, [stage]: { ...lead.drafts[stage], [field]: val } } });
   const setStageAngle = (stage, val) => onUpdate({ stageAngles: { ...lead.stageAngles, [stage]: val } });
   const wordCount = (lead.drafts[activeStage].body || "").trim().split(/\s+/).filter(Boolean).length;
   const suggestedAngle = suggestNextAngle(lead, allAngleTypes || []);
+  // Personal/family content is checked once, at the highest-stakes moment (right
+  // before confirming a send) rather than as a persistent nag while drafting —
+  // see the "Mark as sent" confirm modal below.
+  const sendWarning = confirmStage?.action === "send"
+    ? detectPersonalContent(lead.drafts[confirmStage.stage]?.body)
+    : { flagged: false, matches: [] };
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -155,10 +151,9 @@ export default function LeadDetail({
       <SectionCard icon={FileText} title="Notes">
         <div className="space-y-4">
           <Field label="SMYK Personalization Notes">
-            <textarea value={lead.smykNotes} onChange={(e) => setField("smykNotes", e.target.value)} className={textareaCls} rows={3} />
-            <PersonalContentWarning text={lead.smykNotes} />
+            <textarea value={lead.smykNotes} onChange={(e) => setField("smykNotes", e.target.value)} className={textareaCls} rows={10} />
           </Field>
-          <Field label="Next Action / Note to Partner"><textarea value={lead.nextNote} onChange={(e) => setField("nextNote", e.target.value)} className={textareaCls} rows={2} /></Field>
+          <Field label="Next Action / Note to Partner"><textarea value={lead.nextNote} onChange={(e) => setField("nextNote", e.target.value)} className={textareaCls} rows={4} /></Field>
         </div>
       </SectionCard>
 
@@ -199,10 +194,18 @@ export default function LeadDetail({
           </Field>
         </div>
         <div className="mt-3">
-          <Field label="Body">
-            <textarea value={lead.drafts[activeStage].body} onChange={(e) => setDraft(activeStage, "body", e.target.value)} className={textareaCls} rows={8} />
-            <PersonalContentWarning text={lead.drafts[activeStage].body} />
-          </Field>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono text-[#8A8574] uppercase tracking-wider">Body</span>
+            <button
+              onClick={() => setComposeExpanded(true)}
+              className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
+            >
+              <Maximize2 size={11} /> Expand
+            </button>
+          </div>
+          <div className="mt-1.5">
+            <textarea value={lead.drafts[activeStage].body} onChange={(e) => setDraft(activeStage, "body", e.target.value)} className={textareaCls} rows={16} />
+          </div>
           <div className="text-[11px] text-[#B8B2A0] mt-1.5 text-right">{wordCount} words</div>
         </div>
 
@@ -249,6 +252,25 @@ export default function LeadDetail({
         </SectionCard>
       )}
 
+      <Modal open={composeExpanded} onClose={() => setComposeExpanded(false)} maxWidth="max-w-3xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-serif text-xl text-[#12283C]">{STAGE_LABEL[activeStage]} — {lead.name || "Unnamed clinic"}</h3>
+          <Button variant="secondary" size="sm" onClick={() => setComposeExpanded(false)}>Done</Button>
+        </div>
+        <Field label="Subject" className="mb-3">
+          <input value={lead.drafts[activeStage].subject} onChange={(e) => setDraft(activeStage, "subject", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Body">
+          <textarea
+            value={lead.drafts[activeStage].body}
+            onChange={(e) => setDraft(activeStage, "body", e.target.value)}
+            className={textareaCls + " min-h-[52vh]"}
+            autoFocus
+          />
+        </Field>
+        <div className="text-[11px] text-[#B8B2A0] mt-1.5 text-right">{wordCount} words</div>
+      </Modal>
+
       <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete this clinic?" maxWidth="max-w-sm">
         <p className="text-sm text-[#6B6355] mb-5">
           This permanently removes {lead.name ? <span className="font-medium text-[#12283C]">{lead.name}</span> : "this clinic"} and all of its drafts and history. This can't be undone.
@@ -265,11 +287,17 @@ export default function LeadDetail({
         title={confirmStage?.action === "send" ? `Mark ${STAGE_LABEL[confirmStage?.stage] || ""} as sent?` : `Undo sent — ${STAGE_LABEL[confirmStage?.stage] || ""}?`}
         maxWidth="max-w-sm"
       >
-        <p className="text-sm text-[#6B6355] mb-5">
+        <p className="text-sm text-[#6B6355] mb-3">
           {confirmStage?.action === "send"
             ? "This marks the email as actually sent and starts the follow-up countdown from today. Only confirm once you've actually sent it."
             : "This clears the sent date and reopens this stage for editing — use this if it got marked sent by mistake."}
         </p>
+        {sendWarning.flagged && (
+          <p className="flex items-start gap-1.5 text-[12px] mb-4" style={{ color: BRAND_MAROON }}>
+            <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
+            <span>This draft may still contain personal/family content ("{sendWarning.matches[0]}") — double check before sending.</span>
+          </p>
+        )}
         <div className="flex gap-2.5 justify-end">
           <Button variant="secondary" onClick={() => setConfirmStage(null)}>Cancel</Button>
           <Button
