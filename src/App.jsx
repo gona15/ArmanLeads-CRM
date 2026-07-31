@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useCloudState, useWhoAmI, useLinkClicks } from "./lib/useCloudState";
 import { supabase } from "./supabaseClient";
-import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity, normalizeClicks } from "./lib/constants";
+import { STAGES, STATUSES, DEFAULT_ANGLE_TYPES, todayISO, blankLead, computeFollowupState, logActivity, groupByCity, normalizeClicks, normalizeWebsite } from "./lib/constants";
 import Sidebar from "./components/Sidebar";
 import { MobileTopBar, MobileBottomBar } from "./components/MobileNav";
 import LoginScreen from "./components/LoginScreen";
@@ -81,14 +81,22 @@ export default function App() {
     }
   };
 
-  // Duplicate check is a warning, not a block — same name + same city,
-  // case-insensitive, ignoring blank names so a fresh blank lead never
-  // matches another fresh blank lead.
+  // Duplicate check is a warning, not a block. Matches on name+city
+  // (case-insensitive, ignoring blank names so a fresh blank lead never
+  // matches another fresh blank lead) OR the same website domain — the
+  // second catches the case a typo'd/reworded name would miss (e.g. "Iowa
+  // Dental Arts, PC" vs "Iowa Dental Arts, P:C" as two separate entries).
   const findDuplicates = (lead) => {
-    if (!lead?.name?.trim()) return [];
-    const name = lead.name.trim().toLowerCase();
-    const city = (lead.city || "").trim().toLowerCase();
-    return leads.filter((l) => l.id !== lead.id && l.name.trim().toLowerCase() === name && (l.city || "").trim().toLowerCase() === city);
+    const name = (lead?.name || "").trim().toLowerCase();
+    const city = (lead?.city || "").trim().toLowerCase();
+    const website = normalizeWebsite(lead?.website);
+    if (!name && !website) return [];
+    return leads.filter((l) => {
+      if (l.id === lead.id) return false;
+      const nameMatch = name && l.name.trim().toLowerCase() === name && (l.city || "").trim().toLowerCase() === city;
+      const websiteMatch = website && normalizeWebsite(l.website) === website;
+      return nameMatch || websiteMatch;
+    });
   };
 
   const addLead = () => {

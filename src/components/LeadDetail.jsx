@@ -43,6 +43,10 @@ export default function LeadDetail({
   const sendWarning = confirmStage?.action === "send"
     ? detectPersonalContent(lead.drafts[confirmStage.stage]?.body)
     : { flagged: false, matches: [] };
+  // Same "check once, at send time" treatment as the personal-content flag —
+  // catches a body that got written or edited without the tracked link.
+  const sendBody = confirmStage?.action === "send" ? (lead.drafts[confirmStage.stage]?.body || "") : "";
+  const missingLinkWarning = sendBody.length > 0 && !sendBody.includes("armanleads.com/r/");
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -295,9 +299,15 @@ export default function LeadDetail({
             : "This clears the sent date and reopens this stage for editing — use this if it got marked sent by mistake."}
         </p>
         {sendWarning.flagged && (
-          <p className="flex items-start gap-1.5 text-[12px] mb-4" style={{ color: BRAND_MAROON }}>
+          <p className="flex items-start gap-1.5 text-[12px] mb-2" style={{ color: BRAND_MAROON }}>
             <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
             <span>This draft may still contain personal/family content ("{sendWarning.matches[0]}") — double check before sending.</span>
+          </p>
+        )}
+        {missingLinkWarning && (
+          <p className="flex items-start gap-1.5 text-[12px] mb-4" style={{ color: BRAND_MAROON }}>
+            <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
+            <span>No tracked link (armanleads.com/r/{lead.id}) found in this body — clicks on this send won't be tracked.</span>
           </p>
         )}
         <div className="flex gap-2.5 justify-end">

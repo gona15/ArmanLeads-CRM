@@ -69,6 +69,13 @@ export function usedAngleTypes(lead) {
   return lead.angleType ? [lead.angleType] : [];
 }
 
+// Strips protocol/www/trailing slash so two leads pointing at the same
+// practice site match even if one was entered as "example.com" and the
+// other as "https://www.example.com/".
+export function normalizeWebsite(website) {
+  return (website || "").toLowerCase().trim().replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
 export function suggestNextAngle(lead, allAngleTypes) {
   const used = usedAngleTypes(lead);
   return allAngleTypes.find((a) => !used.includes(a)) || null;
