@@ -46,9 +46,12 @@ export default function Dashboard({
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div>
-        <h1 className="font-serif text-2xl sm:text-3xl text-[#12283C]">{greeting}, {me}</h1>
-        <p className="text-sm text-[#8A8574] mt-0.5">Here's where things stand today.</p>
+      <div className="relative">
+        <div className="absolute -top-2 -left-1 w-1.5 h-10 sm:h-14 rounded-full bg-gradient-to-b from-[#7A1F2B] to-[#7A1F2B]/0" aria-hidden="true" />
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-[56px] text-[#12283C] leading-[1.05] tracking-tight pl-4">
+          {greeting},<br className="sm:hidden" /> {me}
+        </h1>
+        <p className="text-sm sm:text-base text-[#8A8574] mt-2 pl-4">Here's where things stand today.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">

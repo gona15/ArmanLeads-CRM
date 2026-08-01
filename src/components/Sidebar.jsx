@@ -17,7 +17,7 @@ export default function Sidebar({ view, setView, onAddLead, me, saving, onSwitch
           <Mail size={17} className="text-white" />
         </div>
         <div className="leading-none">
-          <div className="font-serif text-[17px] text-[#12283C]">ArmanLeads</div>
+          <div className="font-serif text-[17px] text-[#12283C]">Arman<span className="italic font-normal">Leads</span></div>
           <div className="text-[10px] font-mono uppercase tracking-wider text-[#B8B2A0] mt-1">Ledger</div>
         </div>
       </div>

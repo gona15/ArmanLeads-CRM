@@ -10,7 +10,7 @@ export function MobileTopBar({ me, saving, onSwitchIdentity, onOpenSearch }) {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3A8172] to-[#1F5C4E] flex items-center justify-center shrink-0">
             <Mail size={15} className="text-white" />
           </div>
-          <span className="font-serif text-[16px] text-[#12283C]">ArmanLeads</span>
+          <span className="font-serif text-[16px] text-[#12283C]">Arman<span className="italic font-normal">Leads</span></span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onOpenSearch} aria-label="Quick search" className="w-9 h-9 flex items-center justify-center rounded-full active:bg-[#12283C]/5 transition-colors text-[#6B6355]">
