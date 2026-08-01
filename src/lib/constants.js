@@ -144,35 +144,64 @@ export function groupByCity(leads) {
 // substituting only its first character (e.g. "l2tiiqt6" alongside
 // "2tiiqt6" or "12tiiqt6", ~10ms apart). Reads as an email security/link
 // scanner pre-fetching the link and mangling the leading character on the
-// way through — not something this app's own code produces. Resolve those
-// back to the real lead and collapse near-simultaneous hits into one visit
-// rather than double-counting or losing them to an unmatched id.
+// way through — not something this app's own code produces.
+//
+// Since 2026-08, a tracked link can carry ?s={stage} (initial/fu1/fu2/fu3)
+// so a click can be attributed to the specific email it was in, not just
+// the lead — worker.js encodes that as "leadId:stage" in the same lead_id
+// text column (no schema access from that repo to add a real column).
+// Older rows have no stage and normalize to stage: null, which reads as
+// "clicked, but which specific email isn't known" rather than being lost.
+//
+// Returns { [leadId]: { count, first, last, byStage: { [stage]: {count,
+// first, last} } } } — resolving corrupted ids against the real lead list
+// and collapsing near-simultaneous duplicates into one visit either way.
 export function normalizeClicks(rawClicks, leads) {
   const realIds = new Set(leads.map((l) => l.id));
-  const resolved = (rawClicks || []).map((row) => {
-    if (realIds.has(row.lead_id)) return { ...row, resolvedId: row.lead_id };
+  const resolveId = (rawId) => {
+    if (realIds.has(rawId)) return rawId;
     const match = leads.find((l) => {
       const id = l.id;
-      if (id.length === row.lead_id.length + 1 && id.slice(1) === row.lead_id) return true;
-      if (id.length === row.lead_id.length && id.slice(1) === row.lead_id.slice(1) && id[0] !== row.lead_id[0]) return true;
+      if (id.length === rawId.length + 1 && id.slice(1) === rawId) return true;
+      if (id.length === rawId.length && id.slice(1) === rawId.slice(1) && id[0] !== rawId[0]) return true;
       return false;
     });
-    return { ...row, resolvedId: match ? match.id : row.lead_id };
+    return match ? match.id : rawId;
+  };
+
+  const resolved = (rawClicks || []).map((row) => {
+    const raw = String(row.lead_id);
+    const sep = raw.indexOf(":");
+    const rawId = sep === -1 ? raw : raw.slice(0, sep);
+    const stage = sep === -1 ? null : raw.slice(sep + 1);
+    return { clicked_at: row.clicked_at, resolvedId: resolveId(rawId), stage };
   });
 
-  const byLead = {};
+  const byKey = {};
   for (const row of resolved) {
-    (byLead[row.resolvedId] ||= []).push(row.clicked_at);
+    ((byKey[`${row.resolvedId} ${row.stage || ""}`]) ||= []).push(row.clicked_at);
   }
-  const result = {};
-  for (const [leadId, timestamps] of Object.entries(byLead)) {
+
+  const dedupe = (timestamps) => {
     const sorted = [...timestamps].sort();
     const visits = [];
     for (const t of sorted) {
       const last = visits[visits.length - 1];
       if (!last || new Date(t) - new Date(last) > 5000) visits.push(t);
     }
-    result[leadId] = { count: visits.length, first: visits[0], last: visits[visits.length - 1] };
+    return visits;
+  };
+
+  const result = {};
+  for (const [key, timestamps] of Object.entries(byKey)) {
+    const [leadId, stage] = key.split(" ");
+    const visits = dedupe(timestamps);
+    if (!result[leadId]) result[leadId] = { count: 0, first: null, last: null, byStage: {} };
+    const entry = result[leadId];
+    entry.count += visits.length;
+    if (!entry.first || visits[0] < entry.first) entry.first = visits[0];
+    if (!entry.last || visits[visits.length - 1] > entry.last) entry.last = visits[visits.length - 1];
+    if (stage) entry.byStage[stage] = { count: visits.length, first: visits[0], last: visits[visits.length - 1] };
   }
   return result;
 }

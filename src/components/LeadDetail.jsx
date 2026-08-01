@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick, Maximize2 } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick, Maximize2, Link2 } from "lucide-react";
 import CityAutocomplete from "./CityAutocomplete";
 import AngleTypeSelect from "./AngleTypeSelect";
 import StatusBadge from "./ui/StatusBadge";
@@ -50,7 +50,16 @@ export default function LeadDetail({
   // Same "check once, at send time" treatment as the personal-content flag —
   // catches a body that got written or edited without the tracked link.
   const sendBody = confirmStage?.action === "send" ? (lead.drafts[confirmStage.stage]?.body || "") : "";
-  const missingLinkWarning = sendBody.length > 0 && !sendBody.includes("armanleads.com/r/");
+  const missingLinkWarning = sendBody.length > 0 && !sendBody.includes(`armanleads.com/r/${lead.id}`);
+  // ?s={stage} lets a click be attributed to the specific email it was in,
+  // not just the lead — see normalizeClicks() in lib/constants.js.
+  const insertTrackedLink = (stage) => {
+    const body = lead.drafts[stage].body || "";
+    if (body.includes(`armanleads.com/r/${lead.id}`)) return;
+    const sep = body && !body.endsWith("\n\n") ? (body.endsWith("\n") ? "\n" : "\n\n") : "";
+    setDraft(stage, "body", `${body}${sep}armanleads.com/r/${lead.id}?s=${stage}`);
+  };
+  const stageClickInfo = clickInfo?.byStage?.[activeStage];
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -204,12 +213,22 @@ export default function LeadDetail({
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono text-[#8A8574] uppercase tracking-wider">Body</span>
-            <button
-              onClick={() => setComposeExpanded(true)}
-              className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
-            >
-              <Maximize2 size={11} /> Expand
-            </button>
+            <div className="flex items-center gap-3">
+              {!lead.drafts[activeStage].body.includes(`armanleads.com/r/${lead.id}`) && (
+                <button
+                  onClick={() => insertTrackedLink(activeStage)}
+                  className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
+                >
+                  <Link2 size={11} /> Insert tracked link
+                </button>
+              )}
+              <button
+                onClick={() => setComposeExpanded(true)}
+                className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
+              >
+                <Maximize2 size={11} /> Expand
+              </button>
+            </div>
           </div>
           <div className="mt-1.5">
             <textarea value={lead.drafts[activeStage].body} onChange={(e) => setDraft(activeStage, "body", e.target.value)} className={textareaCls} rows={16} />
@@ -241,11 +260,13 @@ export default function LeadDetail({
             </>
           )}
         </div>
-        <div className="mt-2.5 text-[11px] font-mono flex items-center gap-1.5" style={{ color: clickInfo ? "#2F6F62" : "#B8B2A0" }}>
+        <div className="mt-2.5 text-[11px] font-mono flex items-center gap-1.5" style={{ color: stageClickInfo ? "#2F6F62" : "#B8B2A0" }}>
           <MousePointerClick size={12} />
-          {clickInfo
-            ? `Clicked${clickInfo.count > 1 ? ` ${clickInfo.count}x, most recently` : ""} ${fmtDateTime(clickInfo.last)}`
-            : "Not clicked yet"}
+          {stageClickInfo
+            ? `This email clicked${stageClickInfo.count > 1 ? ` ${stageClickInfo.count}x, most recently` : ""} ${fmtDateTime(stageClickInfo.last)}`
+            : clickInfo?.count
+              ? `Not clicked (${clickInfo.count} click${clickInfo.count > 1 ? "s" : ""} on other emails to this lead, pre-tracking format)`
+              : "Not clicked yet"}
         </div>
       </SectionCard>
 
@@ -311,7 +332,16 @@ export default function LeadDetail({
         {missingLinkWarning && (
           <p className="flex items-start gap-1.5 text-[12px] mb-4" style={{ color: BRAND_MAROON }}>
             <ShieldAlert size={13} className="shrink-0 mt-[1px]" />
-            <span>No tracked link (armanleads.com/r/{lead.id}) found in this body — clicks on this send won't be tracked.</span>
+            <span>
+              No tracked link found in this body — clicks on this send won't be tracked.{" "}
+              <button
+                type="button"
+                onClick={() => insertTrackedLink(confirmStage.stage)}
+                className="underline decoration-dotted underline-offset-2 font-medium hover:opacity-70"
+              >
+                Insert it
+              </button>
+            </span>
           </p>
         )}
         <div className="flex gap-2.5 justify-end">
