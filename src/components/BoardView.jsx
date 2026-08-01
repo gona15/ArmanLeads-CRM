@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, MousePointerClick } from "lucide-react";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
 import { STATUSES, STATUS_COLOR, computeFollowupState } from "../lib/constants";
 import { hexToRgba, BRAND_MAROON } from "../lib/theme";
 
-function Card({ lead, onSelect }) {
+function Card({ lead, onSelect, clicked }) {
   const [dragging, setDragging] = useState(false);
   const fu = computeFollowupState(lead);
   return (
@@ -17,7 +17,10 @@ function Card({ lead, onSelect }) {
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="text-sm font-medium text-[#12283C] leading-snug">{lead.name || "Unnamed clinic"}</div>
-        <AssigneeAvatar name={lead.assignedTo} size={20} className="shrink-0" />
+        <div className="flex items-center gap-1 shrink-0">
+          {clicked && <MousePointerClick size={12} className="text-[#2F6F62]" aria-label="Link clicked" />}
+          <AssigneeAvatar name={lead.assignedTo} size={20} />
+        </div>
       </div>
       <div className="flex items-center gap-1 text-[11px] text-[#8A8574] mb-1.5">
         <MapPin size={10} className="shrink-0" />
@@ -33,7 +36,7 @@ function Card({ lead, onSelect }) {
   );
 }
 
-function Column({ status, leads, onSelect, onDropLead }) {
+function Column({ status, leads, onSelect, onDropLead, linkClicks }) {
   const [dragOver, setDragOver] = useState(false);
   const color = STATUS_COLOR[status];
   return (
@@ -58,7 +61,7 @@ function Column({ status, leads, onSelect, onDropLead }) {
         </span>
       </div>
       <div className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto scroll-thin px-0.5 pb-2 min-h-[60px]">
-        {leads.map((l) => <Card key={l.id} lead={l} onSelect={onSelect} />)}
+        {leads.map((l) => <Card key={l.id} lead={l} onSelect={onSelect} clicked={!!linkClicks?.[l.id]} />)}
         {leads.length === 0 && <div className="text-[11px] text-[#B8B2A0] text-center py-6 border border-dashed border-[#E4E0D5] rounded-xl">Drop here</div>}
       </div>
     </div>
@@ -68,7 +71,7 @@ function Column({ status, leads, onSelect, onDropLead }) {
 // Drag-and-drop pipeline board — an alternative to the list for working
 // the whole pipeline at a glance. Dropping a card on a column changes
 // that lead's status the same way the dropdown in Lead Detail does.
-export default function BoardView({ leads, onSelectLead, onDropLead }) {
+export default function BoardView({ leads, onSelectLead, onDropLead, linkClicks }) {
   return (
     <div className="flex gap-3 overflow-x-auto scroll-thin pb-3 -mx-1 px-1">
       {STATUSES.map((status) => (
@@ -78,6 +81,7 @@ export default function BoardView({ leads, onSelectLead, onDropLead }) {
           leads={leads.filter((l) => l.status === status)}
           onSelect={onSelectLead}
           onDropLead={onDropLead}
+          linkClicks={linkClicks}
         />
       ))}
     </div>

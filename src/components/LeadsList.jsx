@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, MapPin, ChevronRight, Building2, Plus, List, LayoutGrid } from "lucide-react";
+import { Search, MapPin, ChevronRight, Building2, Plus, List, LayoutGrid, MousePointerClick } from "lucide-react";
 import Select from "./ui/Select";
 import StatusBadge from "./ui/StatusBadge";
 import AssigneeAvatar from "./ui/AssigneeAvatar";
@@ -45,8 +45,15 @@ export default function LeadsList({
   allCities,
   onSelectLead,
   onAddLead,
+  linkClicks,
 }) {
   const [mode, setMode] = useState("list");
+  const [clickFilter, setClickFilter] = useState("All");
+  const visibleLeads = filtered.filter((l) => {
+    if (clickFilter === "All") return true;
+    const clicked = !!linkClicks?.[l.id];
+    return clickFilter === "Clicked" ? clicked : !clicked;
+  });
 
   return (
     <div className="space-y-4">
@@ -55,7 +62,7 @@ export default function LeadsList({
           <h1 className="font-serif text-2xl sm:text-3xl text-[#12283C]">All Clinics</h1>
           <p className="text-sm text-[#8A8574] mt-0.5">
             {mode === "list"
-              ? `${filtered.length} of ${leads.length} clinics${filtered.length !== leads.length ? " match your filters" : ""}`
+              ? `${visibleLeads.length} of ${leads.length} clinics${visibleLeads.length !== leads.length ? " match your filters" : ""}`
               : `${boardLeads.length} clinics · drag a card to change its status`}
           </p>
         </div>
@@ -94,14 +101,21 @@ export default function LeadsList({
             <option>All</option>
             {ASSIGNEES.map((a) => <option key={a}>{a}</option>)}
           </Select>
+          {mode === "list" && (
+            <Select value={clickFilter} onChange={(e) => setClickFilter(e.target.value)} className="!w-auto min-w-[126px]">
+              <option>All</option>
+              <option>Clicked</option>
+              <option>Not clicked</option>
+            </Select>
+          )}
         </div>
       </div>
 
       {mode === "board" ? (
-        <BoardView leads={boardLeads} onSelectLead={onSelectLead} onDropLead={onDropLead} />
+        <BoardView leads={boardLeads} onSelectLead={onSelectLead} onDropLead={onDropLead} linkClicks={linkClicks} />
       ) : (
         <div className="surface overflow-hidden">
-          {filtered.length === 0 && (
+          {visibleLeads.length === 0 && (
             <EmptyState
               icon={Building2}
               title="No clinics match"
@@ -109,7 +123,7 @@ export default function LeadsList({
             />
           )}
           <div className="divide-y divide-[#EEEAE0]">
-            {filtered.map((l, i) => (
+            {visibleLeads.map((l, i) => (
               <button
                 key={l.id}
                 onClick={() => onSelectLead(l.id)}
@@ -127,6 +141,17 @@ export default function LeadsList({
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                  <span
+                    title={
+                      linkClicks?.[l.id]
+                        ? `Clicked ${linkClicks[l.id].count}x, most recently ${new Date(linkClicks[l.id].last).toLocaleDateString()}`
+                        : "Not clicked yet"
+                    }
+                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full"
+                    style={{ backgroundColor: linkClicks?.[l.id] ? "rgba(47,111,98,0.12)" : "transparent" }}
+                  >
+                    <MousePointerClick size={13} style={{ color: linkClicks?.[l.id] ? "#2F6F62" : "#D8D3C4" }} />
+                  </span>
                   <AssigneeAvatar name={l.assignedTo} size={24} className="hidden sm:inline-flex" />
                   <StatusBadge status={l.status} />
                   <ChevronRight size={15} className="text-[#B8B2A0] group-hover:translate-x-0.5 transition-transform hidden sm:block" />

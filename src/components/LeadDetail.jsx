@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick, Maximize2, Link2 } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Send, Search, FileText, Phone, Undo2, ShieldAlert, Clock, Users, MousePointerClick, Maximize2, Link2, Mail } from "lucide-react";
 import CityAutocomplete from "./CityAutocomplete";
 import AngleTypeSelect from "./AngleTypeSelect";
 import StatusBadge from "./ui/StatusBadge";
@@ -60,6 +60,16 @@ export default function LeadDetail({
     setDraft(stage, "body", `${body}${sep}armanleads.com/r/${lead.id}?s=${stage}`);
   };
   const stageClickInfo = clickInfo?.byStage?.[activeStage];
+  // Client-side only - no backend/OAuth to call the Gmail API directly, so
+  // this opens Gmail's own compose UI pre-filled instead. Gmail auto-saves
+  // any compose window with content as a draft within seconds - genuinely
+  // one click, but it opens a fresh thread (no reply-to-existing-thread via
+  // URL) and very long bodies can hit Gmail's URL length limit untruncated.
+  const openInGmail = (stage) => {
+    const draft = lead.drafts[stage];
+    const params = new URLSearchParams({ view: "cm", fs: "1", to: (lead.email || "").trim(), su: draft.subject || "", body: draft.body || "" });
+    window.open(`https://mail.google.com/mail/?${params.toString()}`, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -213,18 +223,18 @@ export default function LeadDetail({
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono text-[#8A8574] uppercase tracking-wider">Body</span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
               {!lead.drafts[activeStage].body.includes(`armanleads.com/r/${lead.id}`) && (
                 <button
                   onClick={() => insertTrackedLink(activeStage)}
-                  className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors py-2.5 px-2 -my-2.5 rounded-lg hover:bg-[#12283C]/5"
                 >
                   <Link2 size={11} /> Insert tracked link
                 </button>
               )}
               <button
                 onClick={() => setComposeExpanded(true)}
-                className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors"
+                className="flex items-center gap-1 text-[11px] text-[#8A8574] hover:text-[#12283C] transition-colors py-2.5 px-2 -my-2.5 rounded-lg hover:bg-[#12283C]/5"
               >
                 <Maximize2 size={11} /> Expand
               </button>
@@ -249,14 +259,25 @@ export default function LeadDetail({
           ) : (
             <>
               <span className="text-[11px] font-mono text-[#8A8574]">Not sent yet — draft autosaves</span>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setConfirmStage({ stage: activeStage, action: "send" })}
-                disabled={!lead.drafts[activeStage].body}
-              >
-                <Send size={13} /> Mark {STAGE_LABEL[activeStage]} as Sent
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => openInGmail(activeStage)}
+                  disabled={!lead.email || !lead.drafts[activeStage].body}
+                  title={!lead.email ? "No email on file for this lead yet" : "Opens Gmail compose, pre-filled — Gmail auto-saves it as a draft"}
+                >
+                  <Mail size={13} /> Open in Gmail
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => setConfirmStage({ stage: activeStage, action: "send" })}
+                  disabled={!lead.drafts[activeStage].body}
+                >
+                  <Send size={13} /> Mark {STAGE_LABEL[activeStage]} as Sent
+                </Button>
+              </div>
             </>
           )}
         </div>

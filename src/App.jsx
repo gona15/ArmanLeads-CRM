@@ -291,6 +291,7 @@ export default function App() {
                 allCities={allCities}
                 onSelectLead={goToLead}
                 onAddLead={addLead}
+                linkClicks={linkClicks}
               />
             </div>
           )}

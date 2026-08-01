@@ -42,7 +42,9 @@ export default function Dashboard({
   onSelectLead,
 }) {
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  // Late night (12am-5am) shouldn't get a cheerful "good morning" - that's
+  // "still up" territory, not the start of a day.
+  const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : hour < 23 ? "Good evening" : "Still up";
 
   return (
     <div className="space-y-5 sm:space-y-6">

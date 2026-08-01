@@ -6,7 +6,7 @@ import { CheckCircle2, X } from "lucide-react";
 export default function Toast({ toast, onDismiss }) {
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(onDismiss, toast.duration || 6000);
+    const t = setTimeout(onDismiss, toast.duration || 4500);
     return () => clearTimeout(t);
   }, [toast, onDismiss]);
 
