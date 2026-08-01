@@ -76,9 +76,10 @@ export default function CitiesView({ cityGroups, activeCity, completedCities, on
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-2xl sm:text-3xl text-[#12283C]">Cities</h1>
-        <p className="text-sm text-[#8A8574] mt-0.5">Work one market at a time — wrap one up, move to the next.</p>
+      <div className="relative">
+        <div className="absolute -top-2 -left-1 w-1.5 h-10 sm:h-14 rounded-full bg-gradient-to-b from-[#2F6F62] to-[#2F6F62]/0" aria-hidden="true" />
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-[56px] text-[#12283C] leading-[1.05] tracking-tight pl-4">Cities</h1>
+        <p className="text-sm sm:text-base text-[#8A8574] mt-2 pl-4">Work one market at a time — wrap one up, move to the next.</p>
       </div>
 
       <div className="surface p-4 sm:p-5 flex items-center gap-2.5 flex-wrap">
