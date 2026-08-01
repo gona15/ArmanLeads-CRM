@@ -58,10 +58,9 @@ export default function LeadsList({
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="relative">
-          <div className="absolute -top-2 -left-1 w-1.5 h-9 sm:h-12 rounded-full bg-gradient-to-b from-[#5B8DB8] to-[#5B8DB8]/0" aria-hidden="true" />
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#12283C] leading-[1.05] tracking-tight pl-4">All Clinics</h1>
-          <p className="text-sm text-[#8A8574] mt-1.5 pl-4">
+        <div>
+          <h1 className="font-serif text-2xl sm:text-3xl text-[#12283C] leading-tight tracking-tight">All Clinics</h1>
+          <p className="text-sm text-[#8A8574] mt-0.5">
             {mode === "list"
               ? `${visibleLeads.length} of ${leads.length} clinics${visibleLeads.length !== leads.length ? " match your filters" : ""}`
               : `${boardLeads.length} clinics · drag a card to change its status`}

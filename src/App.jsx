@@ -174,23 +174,33 @@ export default function App() {
   const myQueue = leads.filter((l) => l.assignedTo === me || l.assignedTo === "Both");
   const sentToday = leads.reduce((acc, l) => acc + STAGES.filter((s) => l.sentDates[s] === todayISO()).length, 0);
   const totalSentEmails = leads.reduce((acc, l) => acc + STAGES.filter((s) => l.sentDates[s]).length, 0);
+  // withInitial ("ever had an initial sent, whatever status now") is the
+  // right base for conversion rate specifically - a Booked Call/Client Won
+  // lead has necessarily moved off "Sent" by definition, so scoping that
+  // denominator to current status would make conversion unmeasurable.
   const withInitial = leads.filter((l) => l.sentDates.initial).length;
-  const repliedCount = leads.filter((l) => l.repliedDate).length;
   const bookedOrWon = leads.filter((l) => ["Booked Call", "Client Won"].includes(l.status)).length;
-  const replyRate = withInitial ? ((repliedCount / withInitial) * 100).toFixed(1) : "0.0";
   const convRate = withInitial ? ((bookedOrWon / withInitial) * 100).toFixed(1) : "0.0";
+  // Reply rate and click rate scope to leads currently sitting in status
+  // "Sent" specifically, not "ever sent regardless of current status" -
+  // otherwise a lead that replied and got moved to Disqualified could
+  // count in the numerator (repliedDate is still set) while dropping out
+  // of a broader denominator, quietly skewing the rate.
+  const sentLeads = leads.filter((l) => l.status === "Sent");
+  const repliedCount = sentLeads.filter((l) => l.repliedDate).length;
+  const replyRate = sentLeads.length ? ((repliedCount / sentLeads.length) * 100).toFixed(1) : "0.0";
   const statusCounts = STATUSES.map((s) => ({ name: s, value: leads.filter((l) => l.status === s).length }));
   const allAngleTypes = [...DEFAULT_ANGLE_TYPES, ...customAngleTypes];
   const angleStats = allAngleTypes.map((a) => {
-    const withAngle = leads.filter((l) => l.angleType === a && l.sentDates.initial);
+    const withAngle = sentLeads.filter((l) => l.angleType === a);
     const replied = withAngle.filter((l) => l.repliedDate).length;
     return { name: a, rate: withAngle.length ? Math.round((replied / withAngle.length) * 100) : 0, count: withAngle.length };
   }).filter((a) => a.count > 0);
   const clickedLeadIds = new Set(Object.keys(linkClicks));
-  const clickedCount = leads.filter((l) => l.sentDates.initial && clickedLeadIds.has(l.id)).length;
-  const clickRate = withInitial ? ((clickedCount / withInitial) * 100).toFixed(1) : "0.0";
+  const clickedCount = sentLeads.filter((l) => clickedLeadIds.has(l.id)).length;
+  const clickRate = sentLeads.length ? ((clickedCount / sentLeads.length) * 100).toFixed(1) : "0.0";
   const angleClickStats = allAngleTypes.map((a) => {
-    const withAngle = leads.filter((l) => l.angleType === a && l.sentDates.initial);
+    const withAngle = sentLeads.filter((l) => l.angleType === a);
     const clicked = withAngle.filter((l) => clickedLeadIds.has(l.id)).length;
     return { name: a, rate: withAngle.length ? Math.round((clicked / withAngle.length) * 100) : 0, count: withAngle.length };
   }).filter((a) => a.count > 0);
