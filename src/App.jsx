@@ -199,9 +199,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F5F3EC] text-[#12283C] relative isolate">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="animate-mesh-drift absolute -top-40 -left-32 w-[520px] h-[520px] rounded-full opacity-[0.10] blur-3xl" style={{ background: "#2F6F62" }} />
-        <div className="animate-mesh-drift absolute top-1/3 -right-40 w-[480px] h-[480px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "#7A1F2B", animationDelay: "-6s" }} />
-        <div className="animate-mesh-drift absolute -bottom-32 left-1/4 w-[440px] h-[440px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "#C99A3C", animationDelay: "-12s" }} />
+        <div className="animate-mesh-drift absolute -top-40 -left-32 w-[620px] h-[620px] rounded-full opacity-[0.16] blur-3xl" style={{ background: "#2F6F62" }} />
+        <div className="animate-mesh-drift absolute top-1/3 -right-48 w-[560px] h-[560px] rounded-full opacity-[0.13] blur-3xl" style={{ background: "#7A1F2B", animationDelay: "-6s" }} />
+        <div className="animate-mesh-drift absolute -bottom-40 left-1/4 w-[520px] h-[520px] rounded-full opacity-[0.13] blur-3xl" style={{ background: "#C99A3C", animationDelay: "-12s" }} />
       </div>
       <Sidebar
         view={view}
